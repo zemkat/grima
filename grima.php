@@ -1,3 +1,9 @@
+<?php
+#
+#       grima.php - pass messages to grima minions, display usage
+#
+#       (c) 2017 Kathryn Lybarger. CC-BY-SA
+#
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
@@ -16,16 +22,7 @@
 
 <?php
 
-#
-#	grima.php - whisper into alma's ear
-#		parse the input and call the correct function
-#
-
 require_once("grima-lib.php");
-
-#function is_mmsid($num) {
-#	return preg_match("/^[0123456789]+$/",$num) and (strlen($num) == 16);
-#}
 
 function do_redirect($url) {
         if(!headers_sent()) header("Location: $url");
