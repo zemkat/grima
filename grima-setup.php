@@ -1,21 +1,64 @@
 <?php
 
+if(include "Predis/Autoloader.php") {
+	Predis\Autoloader::register();
+	$redis = new Predis\Client(array('host'=>'redis'));
+} else {
+	$redis = false;
+}
+
 function save_config($req) {
+	global $redis;
 	$apikey = clean($req,'apikey');
 	$system = clean($req,'system');
 	$userid = clean($req,'userid');
-	$hostname = clean($req,'hostname','https://api-eu.hosted.exlibrisgroup.com');
-	file_put_contents("grima-config.php",
-		"<?php\n" .
-		"\$this->hostname='$hostname';\n" .
-		"\$this->apikey='$apikey';\n" .
-		"\$this->system='$system';\n" .
-		"\$this->userid='$userid';\n"
+	$server = clean($req,'server','https://api-eu.hosted.exlibrisgroup.com');
+	if($redis) {
+		$redis->set('apikey',$apikey);
+		$redis->set('userid',$userid);
+		$redis->set('system',$system);
+		$redis->set('server',$server);
+	} else {
+		file_put_contents("grima-config.php",
+			"<?php\n" .
+			"\$this->server='$server';\n" .
+			"\$this->apikey='$apikey';\n" .
+			"\$this->system='$system';\n" .
+			"\$this->userid='$userid';\n"
+		);
+	}
+}
+
+function get_config() {
+	global $redis;
+	$apikey = '';
+	$server = 'https://api-eu.hosted.exlibrisgroup.com';
+	$system = '';
+	$userid = '';
+	if( file_exists("grima-config.php") ) {
+		require('grima-config.php');
+	} elseif( $redis ) {
+		$apikey = $redis->get('apikey');
+		$server = $redis->get('server');
+		$system = $redis->get('system');
+		$userid = $redis->get('userid');
+	}
+	$apikey = clean($_REQUEST,'apikey',$apikey);
+	$server = clean($_REQUEST,'server',$server);
+	$system = clean($_REQUEST,'system',$system);
+	$userid = clean($_REQUEST,'userid',$userid);
+	return array(
+		'apikey' => $apikey,
+		'server' => $server,
+		'system' => $system,
+		'userid' => $userid,
 	);
 }
 	
 function check_config() {
+	global $redis;
 	if( file_exists("grima-config.php") ) return;
+	if($redis && $redis->get('apikey') && $redis->get('server') ) return;
 	if(isset($_REQUEST['apikey']) && isset($_REQUEST['system']) && isset($_REQUEST['userid']))  {
 		save_config($_REQUEST);
 		return;
@@ -37,8 +80,8 @@ function check_config() {
               <input class="form-control" id="userid" name="userid" placeholder="User ID" />
             </div>
             <div class="form-group">
-              <label for="hostname">ALMA Server</label>
-              <input class="form-control" id="hostname" name="hostname" placeholder="https://api-eu.hosted.exlibrisgroup.com" />
+              <label for="server">ALMA Server</label>
+              <input class="form-control" id="server" name="server" placeholder="https://api-eu.hosted.exlibrisgroup.com" />
             </div>
             <button type="submit" class="btn btn-default">Submit</button>
           </form>
@@ -49,7 +92,7 @@ function check_config() {
 
 function clean($arr,$key,$default) {
 	$val = isset($arr[$key])?$arr[$key]:$default;
-	$val2 = preg_replace('/[^a-zA-Z0-9_-]/','',$val);
+	$val2 = preg_replace('![^a-zA-Z0-9.:/_-]!','',$val);
 	return $val2;
 }
 

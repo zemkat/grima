@@ -6,29 +6,33 @@
 #
 
 class Grima { # keep api keys etc here ?
-	public $hostname;
+	public $server;
 	public $apikey;
 	public $system;
 	public $userid;
 
-	function __construct($hostname = null, $apikey = null) {
-		if ((!$hostname) || (!$apikey)) {
-			require_once("grima-config.php");
+	function __construct($server = null, $apikey = null) {
+		if ((!$server) || (!$apikey)) {
+			$config = get_config();
+			$this->server = $config['server'];
+			$this->apikey = $config['apikey'];
+			$this->system = $config['system'];
+			$this->userid = $config['userid'];
 		} else {
-			$this->hostname = $hostname; $this->apikey = $apikey;
+			$this->server = $server; $this->apikey = $apikey;
 		}
 	}
 
 	function dump() {
 		print "APIKEY:" . $this->apikey . "\n";
-		print "HOSTNAME:" . $this->hostname . "\n";
+		print "server:" . $this->server . "\n";
 	}
 
 	function get($url,$params) {
 		foreach ($params as $k => $v) {
 			$url = str_replace('{'.$k.'}',urlencode($v),$url);
 		}
-		$url = $this->hostname . $url . '?view=full&expand=None&apikey=' . urlencode($this->apikey);
+		$url = $this->server . $url . '?view=full&expand=None&apikey=' . urlencode($this->apikey);
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
@@ -45,7 +49,7 @@ class Grima { # keep api keys etc here ?
 		foreach ($params as $k => $v) {
 			$url = str_replace('{'.$k.'}',urlencode($v),$url);
 		}
-		$url = $this->hostname . $url . '?apikey=' . urlencode($this->apikey);
+		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey);
 		$bodyxml = $body->saveXML($body->documentElement);
 		$ch = curl_init();
  		curl_setopt($ch, CURLOPT_URL, $url);
@@ -62,7 +66,7 @@ class Grima { # keep api keys etc here ?
 		foreach ($params as $k => $v) {
 			$url = str_replace('{'.$k.'}',urlencode($v),$url);
 		}
-		$url = $this->hostname . $url . '?apikey=' . urlencode($this->apikey);
+		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey);
 		$bodyxml = $body->saveXML($body->documentElement);
 		$ch = curl_init();
  		curl_setopt($ch, CURLOPT_URL, $url);
