@@ -4,28 +4,10 @@
 #
 #   (c)2017 Kathryn Lybarger. CC-BY-SA
 #
-?>
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <meta charset="UTF-8"/>
-    <title>Alma</title>
-<script type="text/javascript" src="https://code.jquery.com/jquery-3.1.0.min.js"                    integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"                   integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-<style type="text/css">
-	.jumbotron{ min-height: 100vh; }
-	img.fullwidth { max-width: 100%; }
-    body { background-color: #e5dccb; }
-</style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="panel panel-default">
-
-<?php
+require_once("grima-setup.php");
+readfile('top.html');
 require_once("grima-lib.php");
+echo "      <div class='panel panel-default'>";
 
 function print_form($oclcnum,$mms_id) {
 	print "        <div class=\"panel-heading\">\n";
