@@ -1,0 +1,12 @@
+<GrimaForm>
+    <Title>Grima: Remove Temporary Location</Title>
+    <Field
+        name="barcode"
+        label="Barcode"
+        shortname="b"
+        autocomplete="off"
+        required="yes"
+        placeholder="Barcode of item to modify..."
+		keep_after_success=""
+    />
+</GrimaForm>

@@ -1,0 +1,19 @@
+<GrimaForm>
+    <Title>Grima: Insert OCLC Number</Title>
+    <Field
+        name="mms_id"
+        label="MMS ID of Bib"
+        shortname="m"
+        autocomplete="off"
+        required="yes"
+        placeholder="Bib to edit..."
+    />
+    <Field
+        name="oclcnum"
+        label="OCLC Number"
+        shortname="o"
+        autocomplete="off"
+        required="yes"
+        placeholder="OCLC Number to Insert..."
+    />
+</GrimaForm>

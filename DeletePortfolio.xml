@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Delete Portfolio</Title>
+	<Field
+		name="portfolio_id"
+		label="Portfolio ID"
+		shortname="p"
+		autocomplete="off"
+		required="yes"
+		placeholder="Portfolio to delete..."
+	/>
+</GrimaForm>

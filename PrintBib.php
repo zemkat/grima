@@ -1,3 +1,16 @@
+<?php
+
+require_once("grima-lib.php");
+
+class PrintBib extends GrimaTask {
+
+	function do_task() {
+		$this->bib = new Bib();
+		$this->bib->loadFromAlma($this['mms_id']);
+	}
+
+	function print_success() {
+print <<<OUT
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
@@ -9,10 +22,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
     <style type="text/css">
-      body { background-color: #e5dccb; }
       .jumbotron{ min-height: 100vh; }
       img.fullwidth { max-width: 100%; }
-      @media print { 
         .dl-horizontal dt {
           float: left;
           width: 60px;
@@ -25,8 +36,53 @@
         .dl-horizontal dd {
           margin-left: 80px;
         }
-      } 
     </style>
   </head>
   <body>
     <div class="container">
+      <div class="panel panel-default bib">
+        <div class="panel-heading">
+OUT;
+
+	print "<h1 class='panel-title'>Alma Bib #${this['mms_id']}: " . $this->bib->get_title_proper();
+        print "</h1>
+        </div>
+        <div class='panel-body'>
+          <dl class='dl-horizontal'>
+";
+	$xpath = new DomXPath($this->bib->xml);
+
+	$fields = $xpath->query("//record/controlfield");
+	foreach ($fields as $field) {
+		$tag = $field->getAttribute("tag");
+        print "            <dt>$tag</dt><dd>{$field->nodeValue}</dd>\n";
+	}
+
+	$fields = $xpath->query("//record/datafield");
+
+	foreach ($fields as $field) {
+		$ind1 = $field->getAttribute("ind1");
+		if ($ind1 == " ") { $ind1 = "_"; }
+		$ind2 = $field->getAttribute("ind2");
+		if ($ind2 == " ") { $ind2 = "_"; }
+		$tag = $field->getAttribute("tag");
+		print "            <dt>$tag</dt><dd>$ind1$ind2";
+		foreach ($field->childNodes as $subfield) {
+			if ($subfield->nodeName == "subfield") {
+				$code = $subfield->getAttribute("code");
+				print " ǂ$code " . $subfield->nodeValue;
+			}
+		}
+        print "</dd>\n";
+	}
+	print "
+    </div>
+  </body>
+</html>
+";
+
+	}
+
+}
+
+PrintBib::RunIt();

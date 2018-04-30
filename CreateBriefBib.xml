@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: Create Brief Bib</Title>
+    <Field
+        name="title"
+        label="Title"
+        shortname="t"
+        autocomplete="off"
+        required="yes"
+        placeholder="Title for 245$a"
+    />
+</GrimaForm>

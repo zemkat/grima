@@ -1,0 +1,12 @@
+<GrimaForm>
+    <Title>Grima: Boundwith</Title>
+    <Field
+        name="mms"
+        label="Bibs to boundwith"
+        autocomplete="off"
+        required="yes"
+        placeholder="MMS IDs, one per line.
+First bib needs holding and item attached."
+		rows="5"
+    />
+</GrimaForm>

@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: View XML Item</Title>
+    <Field
+        name="item_pid"
+        label="Item PID"
+        shortname="i"
+        autocomplete="off"
+        required="yes"
+        placeholder="Item ID of item to view..."
+    />
+</GrimaForm>

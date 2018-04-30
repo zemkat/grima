@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: Print Holding Record</Title>
+    <Field
+        name="holding_id"
+        label="Holding ID"
+        shortname="h"
+        autocomplete="off"
+        required="yes"
+        placeholder="Holding ID of bib to print..."
+    />
+</GrimaForm>

@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: View XML Holding</Title>
+    <Field
+        name="holding_id"
+        label="Holding ID"
+        shortname="m"
+        autocomplete="off"
+        required="yes"
+        placeholder="Holding ID of holding to view..."
+    />
+</GrimaForm>

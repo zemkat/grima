@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: View XML Bib</Title>
+    <Field
+        name="mms_id"
+        label="MMS ID"
+        shortname="m"
+        autocomplete="off"
+        required="yes"
+        placeholder="MMS ID of bib to view..."
+    />
+</GrimaForm>

@@ -1,0 +1,10 @@
+<GrimaForm>
+	<Title>Grima: Delete Item</Title>
+	<Field
+		name="item"
+		label="Item PID or Barcode"
+		autocomplete="off"
+		required="yes"
+		placeholder="Item identifier or barcode..."
+	/>
+</GrimaForm>
