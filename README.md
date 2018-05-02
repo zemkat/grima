@@ -1,6 +1,8 @@
 grima
 =======
 
+Instructions for installation and configuration coming soon -- watch this space!
+
 Whisper into Alma's ear using APIs
 
 * `grima-lib.php` -- library
