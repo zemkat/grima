@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<item>
+  <item_data>
+    <barcode></barcode>
+    <base_status desc="Item not in place">0</base_status>
+    <physical_material_type desc="Book">BOOK</physical_material_type>
+    <policy/>
+    <provenance/>
+    <is_magnetic>false</is_magnetic>
+    <year_of_issue/>
+    <enumeration_a/>
+    <chronology_i/>
+    <description/>
+    <alternative_call_number/>
+    <alternative_call_number_type/>
+    <storage_location_id/>
+    <pages/>
+    <pieces/>
+    <public_note/>
+    <fulfillment_note/>
+    <internal_note_1/>
+    <internal_note_2/>
+    <internal_note_3/>
+    <statistics_note_1/>
+    <statistics_note_2/>
+    <statistics_note_3/>
+  </item_data>
+</item>

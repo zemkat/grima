@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<holding>
+  <created_by>USERID</created_by>
+  <created_date>2016-10-04Z</created_date>
+  <last_modified_by>USERID</last_modified_by>
+  <last_modified_date>DATEZ</last_modified_date>
+  <originating_system>SYSTEM</originating_system>
+  <record>
+    <leader>00148nx  a22000611n 4500</leader>
+    <controlfield tag="005">DATETIME.0</controlfield>
+    <controlfield tag="008">1011252g    8   4001uueng0000000</controlfield>
+    <datafield ind1="0" ind2=" " tag="852">
+      <subfield code="b">LOCATION</subfield>
+      <subfield code="c">SUBLOCATION</subfield>
+      <subfield code="h">CLASS</subfield>
+      <subfield code="i">ITEM</subfield>
+    </datafield>
+  </record>
+</holding>

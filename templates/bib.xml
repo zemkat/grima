@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<bib>
+  <record_format>marc21</record_format>
+  <title></title>
+  <author></author>
+  <publisher_const></publisher_const>
+  <place_of_publication></place_of_publication>
+  <suppress_from_publishing>false</suppress_from_publishing>
+  <record>
+    <leader>00000cam a2200433Ia 4500</leader>
+    <controlfield tag="005">20180105020352.0</controlfield>
+    <controlfield tag="008">180101s        xx            000 0 eng d</controlfield>
+    <datafield ind1="0" ind2="0" tag="245">
+      <subfield code="a">TITLE</subfield>
+    </datafield>
+  </record>
+</bib>

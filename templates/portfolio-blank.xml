@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<portfolio>
+  <resource_metadata>
+    <mms_id></mms_id>
+    <title></title>
+  </resource_metadata>
+  <electronic_collection>
+    <id></id>
+    <service></service>
+  </electronic_collection>
+  <availability></availability>
+  <material_type></material_type>
+  <activation_date></activation_date>
+  <library></library>
+  <linking_details>
+    <url></url>
+    <url_type></url_type>
+    <static_url></static_url>
+    <proxy_enabled></proxy_enabled>
+    <proxy></proxy>
+  </linking_details>
+  <coverage_details>
+    <coverage_in_use></coverage_in_use>
+    <global_date_information/>
+    <local_date_information/>
+  </coverage_details>
+  <po_line></po_line>
+  <license></license>
+  <pda></pda>
+  <authentication_note></authentication_note>
+  <public_note></public_note>
+</portfolio>
