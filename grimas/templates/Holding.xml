@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<holding>
+  <record>
+    <leader>00148nx  a22000611n 4500</leader>
+    <controlfield tag="005"></controlfield>
+    <controlfield tag="008">1011252g    8   4001uueng0000000</controlfield>
+    <datafield ind1="0" ind2=" " tag="852">
+      <subfield code="b"></subfield>
+      <subfield code="c"></subfield>
+      <subfield code="h"></subfield>
+      <subfield code="i"></subfield>
+    </datafield>
+  </record>
+</holding>

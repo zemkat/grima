@@ -1,0 +1,18 @@
+<GrimaForm>
+	<Title>Grima: Add User</Title>
+	<Field
+		name="username"
+		label="Create Username:"
+		autocomplete="on"
+		required="yes"
+		placeholder="New user's login..."
+	/>
+	<Field
+		name="password"
+		label="Create Password:"
+		type="password"
+		autocomplete="off"
+		required="yes"
+		placeholder="Their Grima password..."
+	/>
+</GrimaForm>

@@ -1,0 +1,27 @@
+<GrimaForm>
+	<Title>Grima: Login</Title>
+	<Field
+		name="username"
+		label="Username:"
+		autocomplete="on"
+		required="yes"
+		placeholder="Your GRIMA ID..."
+	/>
+	<Field
+		name="password"
+		label="Password:"
+		type="password"
+		autocomplete="off"
+		required="yes"
+		placeholder="Your GRIMA password..."
+	/>
+	<Field
+		name="institution"
+		label="Institution:"
+	/>
+	<Field
+		name="redirect_url"
+		type="hidden"
+		required="no"
+	/>
+</GrimaForm>

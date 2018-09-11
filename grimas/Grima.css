@@ -1,0 +1,23 @@
+.jumbotron {
+  min-height: 100vh;
+}
+
+.has-error input {
+  background-color : #ffe4e1;
+}
+
+.form-group label {
+  font-weight: bold;
+}
+
+.help-button {
+  z-index: 1;
+  top: 10px;
+  right: 10px;
+}
+
+@media print {
+  .help-button {
+    display: none;
+  }
+}

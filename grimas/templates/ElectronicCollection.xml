@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><electronic_collection link="/almaws/v1/electronic/e-collections/614830000000121">
+  <id/>
+  <is_local/>
+  <public_name/>
+  <public_name_override/>
+  <description/>
+  <internal_description/>
+  <library/>
+  <type desc="Selective package">0</type>
+  <interface>
+    <name>Westlaw</name>
+  </interface>
+  <process_type/>
+  <access_type desc="Current">current</access_type>
+  <po_line/>
+  <activation_date/>
+  <license/>
+  <alternative_title/>
+  <source/>
+  <creator/>
+  <url/>
+  <url_override/>
+  <free desc="Not Free">0</free>
+  <proxy_enabled desc="No">false</proxy_enabled>
+  <proxy/>
+  <language/>
+  <category/>
+  <portfolios/>
+  <authentication_note/>
+  <public_note/>
+</electronic_collection>

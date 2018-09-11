@@ -1,0 +1,10 @@
+<GrimaForm>
+	<Title>Grima: Delete user</Title>
+	<Field
+		name="username"
+		label="Username:"
+		autocomplete="on"
+		required="yes"
+		placeholder="Their linkblue ID..."
+	/>
+</GrimaForm>

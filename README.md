@@ -1,28 +1,36 @@
 grima
 =======
 
-Instructions for installation and configuration coming soon -- watch this space!
+Whisper into Alma's ear using APIs to speed up workflows. With grima,
+you can use small web-based tools to do tasks like:
+* View / Print a MARC record
+* View bibs, holdings, items in a hierarchy
+* Delete a bib and all of its inventory
+* Create a boundwith
+* Quickly add lots of similar items to a set or serial
+* ... whatever else you want to write with the grima library!
 
-Whisper into Alma's ear using APIs
+## Getting started
 
-* `grima-lib.php` -- library
-* `grima-config-blank.php` - config file, fill out and rename to grima-config.php
-* `PrintBib` -- display bib record in printable web page
-* `InsertOclcNo` -- insert OCLC number into 035
-* `Hierarchy` -- view bib/mfhds/items in hierarchy view
-* `Boundwith` -- create boundwith in Alma using bib 501/774, holding 014
-* `PrintHolding` -- display holding record in printable web page
-* `DeleteBib` -- delete bib from Alma
-* `DeleteItem` -- delete item from Alma
-* `DeletePortfolio` -- delete portfolio from Alma
-* `CreateBriefBib` -- create a brief bib with specified 245a
-* `MoreItems` -- add more items to a holding based on a model item
-* `RemoveTempLocation` -- remove temporary location from item
-* `ViewXmlBib` -- view Bib record as Bib object XML
-* `ViewXmlHolding` -- view Holding record as Holding object XML
-* `ViewXmlItem` -- view Item record as Item object XML
-* `ViewXmlPortfolio` -- view Portfolio record as Elctronic Portfolio object XML
+First download the [most recent release](https://github.com/zemkat/grima/releases/latest).
+Next see the [setup documentation](docs/INSTALL.md) for installing grima
+on your web server and getting started using (and developing) grimas.
 
+## File structure
+* `grimas` - most code, including main library and individual grimas
+* `docs` - documentation
 
-These are copyright Kathryn Lybarger and distributed under CC-BY-SA.
+## License
+This software is copyright Kathryn Lybarger and distributed under CC-BY-SA.
 
+Unless otherwise stated, the software on this site is provided "as-is,"
+without any express or implied warranty. In no event shall zemkat be held
+liable for any damages arising from the use of the software. Please test
+individual grimas on your own data (or sandbox data) before using extensively!
+
+## Acknowledgements
+* Thanks to [Jack Schmidt](https://github.com/jackschmidt) for everything.
+* Thanks to the UK Libraries Cataloging and Database Integrity
+for inspiration and testing.
+* Thanks to Ex Libris for the underlying APIs, and to ELUNA for 
+the community to work with them.

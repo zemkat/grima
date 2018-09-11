@@ -1,0 +1,36 @@
+.jumbotron{
+	min-height: 100vh;
+}
+img.fullwidth {
+	max-width: 100%;
+}
+.dl-horizontal dt {
+		float: left;
+		width: 60px;
+		overflow: hidden;
+		clear: left;
+		text-align: right;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+}
+
+.marc .tag, .marc .delimiter, .marc .indicators {
+		font-family: monospace;
+		font-size: 125%;
+		font-weight: bolder;
+}
+
+.dl-horizontal dd {
+		margin-left: 80px;
+}
+
+.dl-horizontal > * {
+		margin-top: 0;
+		margin-bottom: 0;
+}
+
+.portfolio {
+	border-bottom: 3px solid rgba(0,0,0,0.2);
+	margin-bottom: 1em;
+}
+

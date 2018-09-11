@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: Print Bibs from an Electronic Collection</Title>
+    <Field
+        name="collection_id"
+        label="Collection ID"
+        shortname="c"
+        autocomplete="off"
+        required="yes"
+        placeholder="Collection ID..."
+    />
+</GrimaForm>

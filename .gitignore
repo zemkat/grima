@@ -1,1 +1,6 @@
-grima-config.php
+.bundle
+.htaccess
+docs/dev
+dist
+releases
+node_modules

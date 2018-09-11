@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Dedup ASP inventory</Title>
+	<Field
+		name="mms_id"
+		label="MMS ID"
+		shortname="m"
+		autocomplete="off"
+		required="yes"
+		placeholder="Bib of ASP record..."
+	/>
+</GrimaForm>

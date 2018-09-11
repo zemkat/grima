@@ -1,0 +1,10 @@
+<GrimaForm>
+	<Title>Grima: Delete Set</Title>
+	<Field
+		name="set_id"
+		label="Set ID"
+		autocomplete="off"
+		required="yes"
+		placeholder="ID of set to delete..."
+	/>
+</GrimaForm>

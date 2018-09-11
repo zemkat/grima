@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Delete Bib and Inventory</Title>
+	<Field
+		name="mms_id"
+		label="MMS ID"
+		shortname="m"
+		autocomplete="off"
+		required="yes"
+		placeholder="Bib record to delete..."
+	/>
+</GrimaForm>

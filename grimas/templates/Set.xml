@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<set>
+  <id/>
+  <name/>
+  <description/>
+  <type desc="Itemized"/>
+  <content desc="Physical items">ITEM</content>
+  <private desc="Yes">true</private>
+  <status desc="Active">ACTIVE</status>
+</set>

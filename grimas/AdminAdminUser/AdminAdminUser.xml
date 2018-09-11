@@ -1,0 +1,10 @@
+<GrimaForm>
+	<Title>Grima: Upgrade user to Admin</Title>
+	<Field
+		name="username"
+		label="Username:"
+		autocomplete="on"
+		required="yes"
+		placeholder="linkblue ID of user to upgrade..."
+	/>
+</GrimaForm>

@@ -1,0 +1,50 @@
+<GrimaForm>
+	<Title>Grima: Create Institution</Title>
+	<Field
+		name="institution"
+		label="Institution:"
+		autocomplete="off"
+		required="yes"
+		placeholder="Name of institution..."
+	/>
+	<Field
+		name="apikey"
+		label="API Key:"
+		autocomplete="off"
+		required="yes"
+		placeholder="API key from Developer Network..."
+	/>
+	<Field
+		name="username"
+		label="Admin Username:"
+		autocomplete="off"
+		required="yes"
+		placeholder="Username of the primary user..."
+	/>
+	<Field
+		name="password"
+		label="Admin password:"
+		type="password"
+		autocomplete="off"
+		required="yes"
+		placeholder="Password of the primary user..."
+	/>
+	<Field
+		name="server"
+		label="Server:"
+		type="select"
+		required="yes"
+		placeholder="Example: https://api-na.hosted.exlibrisgroup.com"
+	>
+		<option value="https://api-na.hosted.exlibrisgroup.com">America - https://api-na.hosted.exlibrisgroup.com</option>
+		<option value="https://api-eu.hosted.exlibrisgroup.com">Europe - https://api-eu.hosted.exlibrisgroup.com</option>
+		<option value="https://api-ap.hosted.exlibrisgroup.com">Asia Pacific - https://api-ap.hosted.exlibrisgroup.com</option>
+		<option value="https://api-ca.hosted.exlibrisgroup.com">Canada - https://api-ca.hosted.exlibrisgroup.com</option>
+		<option value="https://api-cn.hosted.exlibrisgroup.com">China - https://api-cn.hosted.exlibrisgroup.com</option>
+	</Field>
+	<Field
+		name="redirect_url"
+		type="hidden"
+	/>
+</GrimaForm>
+
