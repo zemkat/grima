@@ -10,6 +10,9 @@ are not as thoroughly tested.
 The web server hosting Grima must support https, and Grima must be accessed
 over https for authentication to work properly.
 
+Grima must be run with Chrome, Firefox, or Safari; authentication will 
+not work properly with Edge or Internet Explorer.
+
 Grima requires libxml to parse Alma's replies, libcurl to make its API queries,
 and PDO to make some very minimal database queries (for users and apikeys). The
 default database provider is an sqlite3 file in `/tmp/grima`. Grima has been
