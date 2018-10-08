@@ -14,7 +14,6 @@ class Login extends GrimaTask {
 		if ($user === false) {
 			throw new Exception('Invalid login / password');
 		}
-		$this->addMessage('success','woohoo');
 	}
 
 	function check_login() {

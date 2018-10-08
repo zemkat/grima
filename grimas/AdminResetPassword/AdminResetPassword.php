@@ -2,7 +2,7 @@
 
 require_once("../grima-lib.php");
 
-class AdminAddUser extends GrimaTask {
+class AdminResetPassword extends GrimaTask {
 
 	function do_task() {
 		$user = GrimaUser::GetCurrentUser();
@@ -11,13 +11,13 @@ class AdminAddUser extends GrimaTask {
 			$newuser['username'] = $this['username'];
 			$newuser['password'] = $this['password'];
 			$newuser['institution'] = $this['institution'];
-			$newuser['isAdmin'] = false; # there can be only ONE for now XXX
-			$newuser->addToDB();
-			$this->addMessage('success',"User {$newuser['username']} successfully added.");
+			GrimaUser::ResetPassword($newuser['username'], $newuser['institution'],
+				$newuser['password']);
+			$this->addMessage('success',"Password for {$newuser['username']} successfully changed.");
 		} else {
 			throw new Exception("User {$user['username']} is not admin.");
 		}
 	}
 }
 
-AdminAddUser::RunIt();
+AdminResetPassword::RunIt();

@@ -67,8 +67,8 @@ php72:IMAGE=php:7.2
 php71:IMAGE=php:7.1
 php70:IMAGE=php:7.0
 php56:IMAGE=php:5.6
-php55:IMAGE=nyanpass/php5.5 
-php54:IMAGE=minity/php54-console
+php55:IMAGE=php:5.5
+php54:IMAGE=php:5.4
 
 local:PORT=32900
 local:

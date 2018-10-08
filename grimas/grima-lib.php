@@ -647,6 +647,7 @@ class Grima {
 			array(),
 			$item
 			);
+		$this->checkForErrorMessage($ret);
 		return $ret;
 	}
 // }}}
@@ -2857,6 +2858,8 @@ class Location extends AlmaObject {
 // }}}
 
 // {{{ class GrimaDB
+
+// {{{ shared
 function tableExists($pdo, $table) {
 	$table_esc = "\"" . preg_replace( "/\"/", "\"\"", $table ) . "\"";
 	try {
@@ -2869,6 +2872,9 @@ function tableExists($pdo, $table) {
 	return $result !== FALSE;
 }
 
+// }}}
+
+// {{{ class GrimaDB
 /** @class GrimaDB
  *	@brief Shared access to the database for GrimaUser and GrimaInstitution
  *
@@ -2935,6 +2941,8 @@ class GrimaDB implements ArrayAccess, IteratorAggregate {
 	}
 
 }
+
+// }}}
 
 // {{{ class GrimaInstitution
 /** @class GrimaInstitution
@@ -3011,6 +3019,31 @@ class GrimaUser extends GrimaDB {
 			$errorInfo = $query->errorInfo();
 			throw new Exception(
 				"Could not select from user database: [$errorCode] {$errorInfo[0]} {$errorInfo[2]}"
+			);
+		}
+	}
+
+	public static function ResetPassword( $username, $institution, $password ) {
+		$db = self::getDb();
+		$query = $db->prepare(
+			'UPDATE users ' .
+			'SET password=:password ' .
+			'WHERE institution=:institution '.
+			'AND username=:username'
+		);
+		$passwordHash = password_hash( $password, self::getPasswordAlgorithm() );
+		$success = $query->execute( array(
+			'institution'	=> $institution,
+			'username'		=> $username,
+			'password'		=> $passwordHash,
+		) );
+		if ($success) {
+			return true;
+		} else {
+			$errorCode = $query->errorCode();
+			$errorInfo = $query->errorInfo();
+			throw new Exception(
+				"Could not update user database: [$errorCode] {$errorInfo[0]} {$errorInfo[2]}"
 			);
 		}
 	}
