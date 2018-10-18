@@ -1717,6 +1717,7 @@ class Bib extends AlmaObjectWithMARC {
 
 	protected $el_address = array(
 		'mms_id' => '//mms_id',
+		'leader' => '//leader',
 		'record_format' => '//record_format',
 		'title' => '//title',
 		'author' => '//author',
@@ -1724,6 +1725,26 @@ class Bib extends AlmaObjectWithMARC {
 		'publisher_const' => '//publisher_const',
 		'publisher' => '//publisher_const'
 	);
+
+	function offsetGet($offset) {
+		if ($offset == 'Type') {
+			$leader = $this['leader'];
+			return $leader[6];
+		}
+		if ($offset == 'BLvl') {
+			$leader = $this['leader'];
+			return $leader[7];
+		}
+		if ($offset == 'ELvl') {
+			$leader = $this['leader'];
+			return $leader[17];
+		}
+		if ($offset == 'Desc') {
+			$leader = $this['leader'];
+			return $leader[18];
+		}
+		return parent::offsetGet($offset);
+	}
 
 	# override because these go multiple places
 	function offsetSet($offset,$value) {
@@ -2284,6 +2305,10 @@ class Item extends AlmaObject {
 		'base_status' => '//base_status',
 		'physical_material_type_code' => '//physical_material_type',
 		'physical_material_type' => '//physical_material_type/@desc',
+		'location' => '//location/@desc',
+		'location_code' => '//location',
+		'library' => '//location/@desc',
+		'library_code' => '//location',
 		'policy' => '//policy',
 		'item_policy' => '//policy',
 		'provenance' => '//provenance',
@@ -2293,15 +2318,40 @@ class Item extends AlmaObject {
 		'year_of_issue' => '//year_of_issue',
 		'enumeration_a' => '//enumeration_a',
 		'enumeration_b' => '//enumeration_b',
+		'enumeration_c' => '//enumeration_c',
+		'enumeration_d' => '//enumeration_d',
+		'enumeration_e' => '//enumeration_e',
+		'enumeration_f' => '//enumeration_f',
+		'enumeration_g' => '//enumeration_g',
+		'enumeration_h' => '//enumeration_h',
 		'chronology_i' => '//chronology_i',
 		'chronology_j' => '//chronology_j',
+		'chronology_k' => '//chronology_k',
+		'chronology_l' => '//chronology_l',
+		'chronology_m' => '//chronology_m',
 		'description' => '//description',
+		'alternative_call_number' => '//alternative_call_number',
+		'alternative_call_number_type' => '//alternative_call_number_type',
+		'storage_location_id' => '//storage_location_id',
+		'receiving_operator' => '//receiving_operator',
+		'process_type' => '//process_type',
 		'in_temp_location' => '//in_temp_location',
  		'mms_id' => '//mms_id',
 		'holding_id' => '//holding_id',
 		'title' => '//title',
-		'location' => '//location/@desc',
 		'call_number' => '//call_number',
+		'pages' => '//pages',
+		'pieces' => '//pieces',
+		'public_note' => '//public_note',
+		'fulfillment_note' => '//fulfillment_note',
+		'internal_note_1' => '//internal_note_1',
+		'internal_note_2' => '//internal_note_2',
+		'internal_note_3' => '//internal_note_3',
+		'statistics_note_1' => '//statistics_note_1',
+		'statistics_note_2' => '//statistics_note_2',
+		'statistics_note_3' => '//statistics_note_3',
+		'requested' => '//requested',
+		'physical_condition' => '//physical_condition',
 	);
 
 // {{{ loadFromAlma (get)

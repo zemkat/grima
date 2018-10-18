@@ -15,6 +15,7 @@ grimas below:
 * [InsertOclcNo](grimas/InsertOclcNo/InsertOclcNo.php) -- insert OCLC number into 035
 * [Boundwith](grimas/Boundwith/Boundwith.php) -- create boundwith in Alma using bib 501/774, holding 014
 * [RemoveTempLocation](grimas/RemoveTempLocation/RemoveTempLocation.php) -- remove temporary location from item
+* [AddInternalNote](grimas/AddInternalNote/AddInternalNote.php) -- add internal note 1 to an item record
 
 ### Add New Records
 * [CreateBriefBib](grimas/CreateBriefBib/CreateBriefBib.php) -- create a brief bib with specified 245a

@@ -2,14 +2,31 @@
 <item>
   <item_data>
     <barcode></barcode>
-    <base_status desc="Item not in place">0</base_status>
+    <base_status desc="Item in place">1</base_status>
     <physical_material_type desc="Book">BOOK</physical_material_type>
     <policy/>
     <provenance/>
+	<po_line/>
+	<receiving_operator/>
     <is_magnetic>false</is_magnetic>
+    <process_type/>
+	<arrival_date/>
     <year_of_issue/>
+    <library/>
+    <location/>
     <enumeration_a/>
+    <enumeration_b/>
+    <enumeration_c/>
+    <enumeration_d/>
+    <enumeration_e/>
+    <enumeration_f/>
+    <enumeration_g/>
+    <enumeration_h/>
     <chronology_i/>
+    <chronology_j/>
+    <chronology_k/>
+    <chronology_l/>
+    <chronology_m/>
     <description/>
     <alternative_call_number/>
     <alternative_call_number_type/>
@@ -24,5 +41,7 @@
     <statistics_note_1/>
     <statistics_note_2/>
     <statistics_note_3/>
+    <requested/>
+    <physical_condition/>
   </item_data>
 </item>
