@@ -10,6 +10,7 @@ grimas below:
 * [PrintBib](grimas/PrintBib/PrintBib.php) -- display bib record in printable web page
 * [PrintHolding](grimas/PrintHolding/PrintHolding.php) -- display holding record in printable web page
 * [Hierarchy](grimas/Hierarchy/Hierarchy.php) -- view bib/mfhds/items in hierarchy view
+* [ResolveLink](grimas/ResolveLink/ResolveLink.php) -- resolve a link in Alma/Primo window
 
 ### Edit Records
 * [InsertOclcNo](grimas/InsertOclcNo/InsertOclcNo.php) -- insert OCLC number into 035

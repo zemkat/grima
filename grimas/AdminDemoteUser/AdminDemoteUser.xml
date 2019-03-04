@@ -5,6 +5,20 @@
 		label="Username:"
 		autocomplete="on"
 		required="yes"
-		placeholder="Their linkblue ID..."
+		placeholder="Their grima username..."
+	/>
+	<Field
+		name="institution"
+		label="Institution:"
+		autocomplete="on"
+		required="no"
+		placeholder="Their Grima Institution..."
+		persistent="yes"
+	/>
+	<Field
+		name="redirect_url"
+		type="hidden"
+		required="no"
+		persistent="yes"
 	/>
 </GrimaForm>

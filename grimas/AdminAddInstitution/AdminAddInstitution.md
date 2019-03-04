@@ -10,8 +10,7 @@ grima install, that's you! This account will be able to create
 [new user](../AdminAddUser/AdminAddUser.html)
 accounts, and 
 [assign them to be admins](../AdminAdminUser/AdminAdminUser.html)
-(who can make
-accounts) or not.
+(who can make accounts) or not.
 
 This grima will be called automatically if you try to run any
 grima without a database being set up.

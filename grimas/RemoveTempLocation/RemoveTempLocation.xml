@@ -7,6 +7,5 @@
         autocomplete="off"
         required="yes"
         placeholder="Barcode of item to modify..."
-		keep_after_success=""
     />
 </GrimaForm>

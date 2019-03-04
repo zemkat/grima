@@ -6,6 +6,7 @@
         shortname="n"
         autocomplete="on"
         required="no"
+        persistent="yes"
         placeholder="Note to add to item..."
     />
     <Field

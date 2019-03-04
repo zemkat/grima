@@ -18,6 +18,7 @@
 	<Field
 		name="institution"
 		label="Institution:"
+        required="yes"
 	/>
 	<Field
 		name="redirect_url"
