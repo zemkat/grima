@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: Resolve a Link</Title>
+    <Field
+        name="url"
+        label="Link to Resolve"
+        shortname="u"
+        autocomplete="off"
+        required="yes"
+        placeholder="Link to resolve..."
+        />
+</GrimaForm>

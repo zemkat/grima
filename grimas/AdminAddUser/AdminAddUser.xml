@@ -19,7 +19,13 @@
 		name="institution"
 		label="Institution"
 		autocomplete="on"
-		required="yes"
+		required="no"
 		placeholder="Institution"
+		persistent="yes"
+	/>
+	<Field
+		name="redirect_url"
+		type="hidden"
+		required="no"
 	/>
 </GrimaForm>

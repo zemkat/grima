@@ -7,15 +7,16 @@ class AdminDeleteUser extends GrimaTask {
 	function do_task() {
 		$user = GrimaUser::GetCurrentUser();
 		if ($user['isAdmin']) {
-			$newuser = GrimaUser::LookupUser($this['username']);
+			$username = $this['username'];
+			$institution = $this['institution'] or $user['institution'];
+			$newuser = GrimaUser::LookupUser($username,$institution);
 			if( $newuser === False ) {
-				$this->addMessage('warning',"User {$this['username']} does not exist.");
-				return;
+				throw new Exception( "User '$username' at $institution does not exist.");
 			}
 			$newuser->deleteFromDB();
-			$this->addMessage('success',"User {$newuser['username']} has been deleted.");
+			$this->addMessage('success',"User $username at $institution has been deleted.");
 		} else {
-			throw new Exception('error',"User {$user['username']} is not admin.");
+			throw new Exception("User {$user['username']} (you) is not admin.");
 		}
 	}
 }

@@ -1,0 +1,8 @@
+<GrimaForm>
+	<Title>Grima: List Users</Title>
+	<Field
+		name="redirect_url"
+		type="hidden"
+		required="no"
+	/>
+</GrimaForm>

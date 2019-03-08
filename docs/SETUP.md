@@ -41,6 +41,19 @@ own login and password. You can create these with
 
 ![Screenshot of AdminAddUser form](images/SETUP-AddUser.png)
 
+## Managing users
+
+You can 
+[promote](../grimas/AdminAdminUser/AdminAdminUser.md), 
+[demote](../grimas/AdminDemoteUser/AdminDemoteUser.md),
+[rename](../grimas/AdminRenameUser/AdminRenameUser.md),
+[delete](../grimas/AdminDeleteUser/AdminDeleteUser.md),
+and otherwise manage users on the 
+[list users page](../grimas/AdminListUsers/AdminListUsers.md).
+
+![Screenshot of AdminListUsers form](../grimas/AdminListUsers/images/grima_list_users.png)
+
+
 ## Additional institutions
 
 Even if all of your users are at the same institution, you may wish to

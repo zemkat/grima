@@ -45,6 +45,7 @@
 	<Field
 		name="redirect_url"
 		type="hidden"
+		required="no"
 	/>
 </GrimaForm>
 

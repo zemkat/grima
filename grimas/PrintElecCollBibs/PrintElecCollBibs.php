@@ -20,6 +20,7 @@ class PrintElecCollBibs extends GrimaTask {
 
 		$this->splatVars['width'] = 12;
 		$this->splatVars['collection'] = $this->collection;
+		$this->splatVars['body'] = array( 'collection', 'messages' );
 	}
 
 }

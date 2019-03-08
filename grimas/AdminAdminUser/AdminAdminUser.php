@@ -7,20 +7,22 @@ class AdminAdminUser extends GrimaTask {
 	function do_task() {
 		$user = GrimaUser::GetCurrentUser();
 		if ($user['isAdmin']) {
-			$newuser = GrimaUser::LookupUser($this['username'],$user['institution']);
+			$username = $this['username'];
+			$institution = $this['institution'] or $user['institution'];
+			$newuser = GrimaUser::LookupUser($username, $institution);
 			if ($newuser === false) {
-				throw new Exception( "User '{$this['username']}' does not exist.");
+				throw new Exception( "User '$username' at $institution does not exist.");
 			}
-			if ($newuser['isAdmin']) {
-				$this->addMessage('warning',
-					"User {$newuser['username']} is already admin.");
+			if (!$newuser['isAdmin']) {
+				$newuser['isAdmin'] = true; 
+				$newuser->updateDB();
+				$this->addMessage('success',"User $username at $institution is now admin.");
+			} else {
+				$this->addMessage('warning',"User $username at $institution is already admin.");
 				return;
 			}
-			$newuser['isAdmin'] = true; 
-			$newuser->updateDB();
-			$this->addMessage('success',"User {$newuser['username']} is now admin.");
 		} else {
-			throw new Exception("User {$user['username']} is not admin.");
+			throw new Exception("User {$user['username']} (you) is not admin.");
 		}
 	}
 }

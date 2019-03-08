@@ -32,13 +32,18 @@ class AdminAddInstitution extends GrimaTask {
 		$inst['institution'] = $this['institution'];
 		$inst['server'] = $this['server'];
 		$inst['apikey'] = $this['apikey'];
-		$inst->addToDB();
-		$this->addMessage('success',"Institution '{$inst['institution']}' successfully added.");
+		try {
+			$inst->addToDB();
+			$this->addMessage('success',"Institution '{$inst['institution']}' successfully added.");
+		} catch(Exception $e) {
+			$this->addMessage('danger',"Failed to add institution {$inst['institution']}");
+			return;
+		}
 		$newAdmin = new GrimaUser();
 		$newAdmin['username'] = $this['username'];
 		$newAdmin['password'] = $this['password'];
 		$newAdmin['institution'] = $this['institution'];
-		$newAdmin['isAdmin'] = true;
+		$newAdmin['isAdmin'] = $firstRun ? 2 : 1;
 		$newAdmin->addToDB();
 		$this->addMessage('success',"User '{$newAdmin['username']}' successfully added as admin of '{$inst['institution']}'.");
 		GrimaUser::SetCurrentUser($newAdmin['username'],$newAdmin['password'],$newAdmin['institution']);

@@ -2,20 +2,20 @@
 
 require_once("../grima-lib.php");
 
-class AdminResetPassword extends GrimaTask {
+class AdminRenameUser extends GrimaTask {
 
 	function do_task() {
 		$user = GrimaUser::GetCurrentUser();
 		if ($user['isAdmin']) {
 			$username = $this['username'];
-			$password = $this['password'];
+			$newusername = $this['newusername'];
 			$institution = $this['institution'] or $user['institution'];
-			GrimaUser::ResetPassword($username, $institution, $password);
-			$this->addMessage('success',"Password for $username @ $institution successfully changed.");
+			GrimaUser::RenameUser($username, $institution, $newusername);
+			$this->addMessage('success',"Username for $username at $institution successfully changed to $newusername.");
 		} else {
 			throw new Exception("User {$user['username']} (you) is not admin.");
 		}
 	}
 }
 
-AdminResetPassword::RunIt();
+AdminRenameUser::RunIt();

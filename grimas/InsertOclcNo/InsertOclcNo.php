@@ -18,7 +18,7 @@ class InsertOclcNo extends GrimaTask {
 	}
 
 	function print_success() {
-		do_redirect('../PrintBib/PrintBib.php?mms_id=' . $this['mms_id']);
+		GrimaTask::call('PrintBib', array('mms_id' => $this['mms_id']));
 	}
 		
 }

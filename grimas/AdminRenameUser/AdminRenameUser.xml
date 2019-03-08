@@ -1,5 +1,5 @@
 <GrimaForm>
-	<Title>Grima: Reset Password</Title>
+	<Title>Grima: Rename User</Title>
 	<Field
 		name="username"
 		label="Username:"
@@ -8,12 +8,11 @@
 		placeholder="User's login..."
 	/>
 	<Field
-		name="password"
-		label="New Password:"
-		type="password"
+		name="newusername"
+		label="New Username:"
 		autocomplete="off"
 		required="yes"
-		placeholder="Their NEW Grima password..."
+		placeholder="User's NEW login..."
 	/>
 	<Field
 		name="institution"

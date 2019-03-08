@@ -1163,13 +1163,18 @@ abstract class GrimaTask implements ArrayAccess {
 			'messages'			=> &$this->messages,
 			'width'				=> 9,
 		);
+		if (isset($this['redirect_url'])) {
+			$this->splatVars['redirect_url'] = $this['redirect_url'];
+		}
 	}
 
 	function print_form() {
+		$this->form->loadValues($this);
 		$this->splat->splat('print_form', $this->splatVars );
 	}
 
 	function print_success() {
+		$this->form->loadPersistentValues($this);
 		$this->splat->splat('print_success', $this->splatVars );
 	}
 
@@ -1207,7 +1212,6 @@ abstract class GrimaTask implements ArrayAccess {
 				$this->error = true;
 			}
 		} else {
-			$this->form->loadValues($this);
 			$this->print_form();
 			exit;
 		}
@@ -1240,7 +1244,6 @@ abstract class GrimaTask implements ArrayAccess {
 				*/
 			} else { # web
 				foreach ($this->form->fields as $field) {
-					#print "NAME: " . $field->name . "<br />";
 					if (isset($_REQUEST[$field->name])) {
 						$this[$field->name] = $_REQUEST[$field->name];
 						/* sanitize */
@@ -1326,6 +1329,11 @@ abstract class GrimaTask implements ArrayAccess {
 		exit;
 	}
 
+	public static function call($grimaname,$args = array()) {
+		$url = rtrim("../$grimaname/$grimaname.php?" . http_build_query($args),"?");
+		do_redirect($url);
+	}
+
 }
 
 // }}}
@@ -1342,17 +1350,6 @@ class GrimaTaskMessage {
 	function __construct($type,$message) {
 		$this->type = $type;
 		$this->message = $message;
-	}
-
-	function toHTML() {
-		$translation = array(
-			'success' => 'alert alert-success',
-			'info' => 'alert alert-info',
-			'warning' => 'alert alert-warning',
-			'error' => 'alert alert-danger'
-		);
-		$class = $translation[$this->type];
-		return "<div class=\"$class\">{$this->message}</div>";
 	}
 }
 
@@ -1382,6 +1379,23 @@ class GrimaForm {
 	}
 // }}}
 
+// {{{ loadPersistentValues
+/**
+ * @brief load persistent values into the form
+ *
+ * @param Object $obj array-accessible
+ */
+	function loadPersistentValues($obj) {
+		foreach ($this->fields as $field) {
+			if (($field->persistent) and isset($obj[$field->name])) {
+				$field->value = $obj[$field->name];
+			}
+		}
+	}
+// }}}
+
+
+
 // {{{ fromXML
 /**
  * @brief interpret XML to determine form fields and behavior
@@ -1398,24 +1412,6 @@ class GrimaForm {
 		foreach ($nodes as $node) {
 			$this->fields[$node->getAttribute('name')] = new GrimaFormField($node);
 		}
-	}
-// }}}
-
-// {{{ toHTML - convert to HTML for display as a form
-/**
- * @brief convert to HTML for display as a form
- */
-	function toHTML() {
-		$html = "<form method=\"post\" action=\"{$this->action}\">";
-		foreach ($this->fields as $field) {
-			if ($field->visible) {
-				$html .= $field->toHTML();
-			}
-		}
-		$html .= "             <input class=\"btn btn-primary active\" type=\"submit\" value=\"submit\" />
-              </form>";
-
-		return $html;
 	}
 // }}}
 
@@ -1436,6 +1432,7 @@ class GrimaFormField {
 	public $label;
 	public $placeholder;
 	public $required;
+	public $persistent;
 	public $visible;
 	public $rows;
 	protected $autocomplete;
@@ -1487,42 +1484,13 @@ class GrimaFormField {
 			$this->type = 'input';
 		}
 		$this->required = $this->booly($field->getAttribute('required'),true);
+		$this->persistent = $this->booly($field->getAttribute('persistent'),false);
 		$this->autocomplete = $this->booly($field->getAttribute('autocomplete'),false);
 		$this->visible = $this->booly($field->getAttribute('visible'),true);
 		$this->options = array();
 		foreach ($field->getElementsByTagName("option") as $option) {
 			$this->options[] = $option->ownerDocument->saveXML( $option );
 		}
-	}
-// }}}
-
-// {{{ toHTML - convert to HTML for display as a form
-/**
- * @brief convert to HTML for display in a form
- */
-	function toHTML() {
-		global $_SERVER;
-		$submitted = ($_SERVER['REQUEST_METHOD'] == 'POST');
-
-		if ($this->rows > 0) {
-			return "<textarea rows=\"{$this->rows}\" cols=\"20\" class=\"form-control\" name=\"{$this->name}\" id=\"{$this->name}\" placeholder=\"{$this->placeholder}\" /></textarea>";
-		}
-		$auto = ($this->autocomplete)?"on":"off";
-		if ($submitted and $this->error_condition) {
-			$error_class = " has-{$this->error_condition}";
-			$help_block = "<span class=\"help-block\">{$this->error_message}</span>";
-		} else {
-			$error_class = "";
-			$help_block = "";
-		}
-		$label = ($this->type != "hidden") ? "<label for=\"{$this->name}\">{$this->label}</label>" : "";
-		return "
-                <div class=\"form-group$error_class\">
-                 $label
-                  <input class=\"form-control$error_class\" name=\"{$this->name}\" id=\"{$this->name}\" size=\"20\" placeholder=\"{$this->placeholder}\" autocomplete=\"$auto\" value=\"{$this->value}\" type=\"{$this->type}\"/>
-					$help_block
-				</div>
-";
 	}
 // }}}
 
@@ -1613,6 +1581,33 @@ class AlmaObjectWithMARC extends AlmaObject {
 	}
 // }}}
 
+// {{{ AlmaObjectWithMARC -> getFields # XXX IN PROGRESS
+/**
+ * @brief get fields for the given MARC tag
+ *
+ * @param String $tag field
+ * @return Array array containing all fields as arrays indexed by subfields
+ */
+	function getFields($tag) {
+		$xpath = new DomXpath($this->xml);
+		$tag = preg_replace('/X*$/','',$tag);
+		$tag = preg_replace('/\.*$/','',$tag);
+		$fields = $xpath->query("//record/datafield[starts-with(@tag,'$tag')]");
+		$fieldarr = array();
+		foreach ($fields as $field) {
+			$subfieldarr = array();
+			foreach ($field->childNodes as $child) {
+				$subfieldarr[] = array(
+					$child->attributes[0]->value,
+					$child->nodeValue
+				);
+			}
+			$fieldarr[] = $subfieldarr;
+		}
+		return $fieldarr;
+	}
+// }}}
+
 // {{{ AlmaObjectWithMARC -> getSubfieldValues
 /**
  * @brief get subfield value
@@ -1634,7 +1629,7 @@ class AlmaObjectWithMARC extends AlmaObject {
 
 // {{{ AlmaObjectWithMARC -> deleteField
 /**
- * @brief add a field to the MARC record
+ * @brief delete all $tag fields from the MARC record
  *
  * @param string $tag a three character MARC tag
  */
@@ -2214,6 +2209,8 @@ class Holding extends AlmaObjectWithMARC {
 	}
 */
 
+	# call number object?
+
 	function setCallNumber($h,$i,$ind1) {
 		$xpath = new DomXpath($this->xml);
 		$xpath->query("//record/datafield[@tag='852']")->item(0)->setAttribute("ind1",$ind1);
@@ -2229,7 +2226,9 @@ class Holding extends AlmaObjectWithMARC {
 		}
 
 		appendInnerXML($field852,"<subfield code=\"h\">$h</subfield>");
-		appendInnerXML($field852,"<subfield code=\"i\">$i</subfield>");
+		if ($i) {
+			appendInnerXML($field852,"<subfield code=\"i\">$i</subfield>");
+		}
 	}
 
 // {{{ moveToBib - moves a holding from one bib to another
@@ -3069,6 +3068,30 @@ class GrimaUser extends GrimaDB {
 			$errorInfo = $query->errorInfo();
 			throw new Exception(
 				"Could not select from user database: [$errorCode] {$errorInfo[0]} {$errorInfo[2]}"
+			);
+		}
+	}
+
+	public static function RenameUser( $username, $institution, $newusername ) {
+		$db = self::getDb();
+		$query = $db->prepare(
+			'UPDATE users ' .
+			'SET username=:newusername ' .
+			'WHERE institution=:institution '.
+			'AND username=:username'
+		);
+		$success = $query->execute( array(
+			'institution'	=> $institution,
+			'username'		=> $username,
+			'newusername'	=> $newusername,
+		) );
+		if ($success) {
+			return true;
+		} else {
+			$errorCode = $query->errorCode();
+			$errorInfo = $query->errorInfo();
+			throw new Exception(
+				"Could not update user database: [$errorCode] {$errorInfo[0]} {$errorInfo[2]}"
 			);
 		}
 	}
