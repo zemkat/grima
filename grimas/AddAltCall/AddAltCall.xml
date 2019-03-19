@@ -1,5 +1,5 @@
 <GrimaForm>
-    <Title>Grima: Add Internal Note 1</Title>
+    <Title>Grima: Add Alternative Call Number</Title>
     <Field
         name="note"
         label="Alternative Call Number"

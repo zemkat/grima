@@ -2957,7 +2957,7 @@ class GrimaDB implements ArrayAccess, IteratorAggregate {
 	protected static function getDb() {
 		if (!self::$db) {
 			$db_url = getenv('DATABASE_URL');
-			if (!$db_url) $db_url = "sqlite:" . join_paths( sys_get_temp_dir(), "grima/grima.sql");
+			if (!$db_url) $db_url = "sqlite:" . join_paths( "//opt/local", "grima/grima.sql");
 			self::$db = new PDO($db_url);
 		}
 		return self::$db;

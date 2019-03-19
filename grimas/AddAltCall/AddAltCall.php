@@ -2,7 +2,7 @@
 
 require_once("../grima-lib.php");
 
-class AddInternalNote extends GrimaTask {
+class AddAltCall extends GrimaTask {
 
 	function do_task() {
 		$item = new Item();
@@ -18,4 +18,4 @@ class AddInternalNote extends GrimaTask {
 
 }
 
-AddInternalNote::RunIt();
+AddAltCall::RunIt();
