@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: Show Items From Holdings</Title>
+    <Field
+        name="holding_id"
+        label="Holding ID"
+        shortname="h"
+        autocomplete="off"
+        required="yes"
+        placeholder="Holding ID with items..."
+    />
+</GrimaForm>

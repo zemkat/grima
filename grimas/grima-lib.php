@@ -2,7 +2,7 @@
 /**
  *		grima-lib.php - a library for running API calls in Alma
  *
- *		(c) 2018 Kathryn Lybarger. CC-BY-SA
+ *		(c) 2019 Kathryn Lybarger. CC-BY-SA
  */
 
 require_once("grima-util.php");
@@ -560,7 +560,7 @@ class Grima {
  * @param string $holding_id MMS ID of Alma holding
  * @param string $limit Max number of items to retrieve
  * @param string $offset Offset of the results returned
- * @return DomDocument Holdings List object
+ * @return DomDocument Item List object
  */
 	function getItemList($mms_id,$holding_id,$limit,$offset) {
 		$ret = $this->get('/almaws/v1/bibs/{mms_id}/holdings/{holding_id}/items', array('mms_id' => $mms_id, 'holding_id' => $holding_id),
@@ -738,6 +738,29 @@ class Grima {
 	}
 // }}}
 
+// {{{ getElectronicPortfolioFromBib (Retrieve Portfolio)
+/**
+ * @brief Retrieve Portfolio - retrieve a portfolio record from Alma
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/bibs/#Catalog)
+ *
+ *      GET /almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}
+ *
+ * @param string $mms_id ID of bib record
+ * @param string $portfolio_id ID of portfolio
+ * @return DomDocument Electronic Portfolio object
+*/
+	function getElectronicPortfolioFromBib($mms_id, $portfolio_id) {
+		$ret = $this->get('/almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}',
+			array('mms_id' => $mms_id, 'portfolio_id' => $portfolio_id),
+			array()
+		);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
 // {{{ postElectronicPortfolio (Create Electronic Portfolio) #XXX
 /**
  * @brief Create Electronic Portfolio - add a new portfolio to Alma
@@ -778,6 +801,30 @@ class Grima {
 	function postElectronicPortfolioOnBib($mms_id,$portfolio) {
 		$ret = $this->post('/almaws/v1/bibs/{mms_id}/portfolios/',
 			array('mms_id' => $mms_id),
+			array(),
+			$portfolio
+			);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
+// {{{ putElectronicPortfolioOnBib (Update Portfolio for a Bib)
+/**
+ * @brief Update Electronic Portfolio - update portfolio in Alma
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/bibs#Resources)
+ *
+ *		PUT /almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}	 
+ *
+ * @param string $mms_id ID of bibliographic record
+ * @param string $portfolio_id ID of portfolio
+ * @return DomDocument Electronic Portfolio object as it appears in Alma
+*/
+	function putElectronicPortfolioOnBib($mms_id,$portfolio_id,$portfolio) {
+		$ret = $this->put('/almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}',
+			array('mms_id' => $mms_id, 'portfolio_id' => $portfolio_id),
 			array(),
 			$portfolio
 			);
@@ -1022,6 +1069,24 @@ class Grima {
   <private desc="No">false</private>
 </set>';
 
+/*
+  Content:
+    BIB_MMS -- all titles
+    ITEM
+    PORTFOLIO
+    IEPA
+    FILE
+    AUTHORITY_MMS
+    IEP
+    IEE
+    IED
+    IEC
+*/
+
+/*
+  Population:
+*/
+
 		$bodyxml = new DomDocument();
 		$bodyxml->loadXML($body);
 
@@ -1084,6 +1149,7 @@ class Grima {
 /**@name Analytics APIs */
 /**@{*/
 
+	# XXX check if blank filter is ok
 	function getAnalytics($path,$filter,$limit=25,$token=null) {
 		return $this->get('/almaws/v1/analytics/reports',
 			array(),
@@ -1586,7 +1652,7 @@ class AlmaObjectWithMARC extends AlmaObject {
  * @brief get fields for the given MARC tag
  *
  * @param String $tag field
- * @return Array array containing all fields as arrays indexed by subfields
+ * @return Array of MARC fields -> object?
  */
 	function getFields($tag) {
 		$xpath = new DomXpath($this->xml);
@@ -1698,9 +1764,26 @@ class AlmaObjectWithMARC extends AlmaObject {
 }
 // }}}
 
-// {{{ class Bib
-/** @class Bib
- ** @brief Bib records returned from Alma
+// {{{ class MARCField -- # XXX in progress
+/** @class MARCField
+ ** @brief MARC fields for use in bibs and holdings
+ */
+
+class MARCField {
+	public $tag;
+	public $subfields = array();
+}
+
+class MARCSubfield {
+	public $code;
+	public $value;
+}
+
+// }}}
+
+// {{{ class bib
+/** @class bib
+ ** @brief bib records returned from alma
  */
 class Bib extends AlmaObjectWithMARC {
 	public $holdingsList; # HoldingsList object
@@ -1869,7 +1952,7 @@ class Bib extends AlmaObjectWithMARC {
 		$this->getHoldingsList();
 		foreach ($this->holdingsList->entries as $entry) {
 			$holding = new Holding();
-			$holding->loadFromAlmaX($entry['holding_id']);
+			$holding->loadFromAlma($this['mms_id'],$entry['holding_id']);
 			$holding['mms_id'] = $this['mms_id'];
 			$this->holdings[] = $holding;
 		}
@@ -2039,6 +2122,7 @@ class HoldingsListEntry extends AlmaObject {
 
 	function getItemList($limit = -1) {
 		global $grima;
+		$this->getMmsIfNeeded();
 		$this->itemList = new ItemList($this['mms_id'], $this['holding_id'], $limit);
 	}
 }
@@ -2091,6 +2175,7 @@ class ItemList extends AlmaObject {
 /** class Holding */
 class Holding extends AlmaObjectWithMARC {
 	public $itemList; # object
+	public $items = array();
 	public $xml;
 
 	function offsetSet($offset,$value) {
@@ -2150,16 +2235,58 @@ class Holding extends AlmaObjectWithMARC {
 	}
 // }}}
 
+// {{{ getMmsFromHoldingID (get) - gets the MMS for a holding ID
+/**
+ * @brief populates the MMS ID 
+ *
+*/
+	public static function getMmsFromHoldingID($holding_id) {
+		global $grima;
+
+		$report = new AnalyticsReport();
+		$report->path = "/shared/UK Libraries- University of Kentucky (UKY)/Reports/Kathryn/HoldingToMMS";
+		$report->filter = '
+<sawx:expr xsi:type="sawx:comparison" op="equal" xmlns:saw="com.siebel.analytics.web/report/v1.1" 
+xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <sawx:expr xsi:type="sawx:sqlExpression">"Holding Details"."Holding Id"</sawx:expr><sawx:expr xsi:type="xsd:string">{holding_id}</sawx:expr>
+</sawx:expr>';
+	
+		$report->runReport(array('holding_id' => $holding_id), 1);
+		if (count($report->rows) == 1) {
+			return $report->rows[0][1];
+		} else {
+			return null;
+		}
+	}
+// }}}
+
+// {{{ getMmsIfNeeded (get) - populates MMS if needed
+/**
+ * @brief populates the MMS ID if not already known
+ *
+*/
+	function getMmsIfNeeded() {
+		global $grima;
+
+		if (!isset($this['mms_id']) or (!$this['mms_id'])) {
+			$this['mms_id'] = Holding::getMmsFromHoldingID($this['holding_id']);
+		}
+	}
+// }}}
+
 // {{{ loadFromAlmaX (get) - populates record from Alma using holding_id
 /**
  * @brief populates the record from Alma - only requires holding_id
- * XXX: Maybe don't use this if you eventually need the MMS ID also?
  *
  * @param $holding_id Holding ID of holding
 */
 	function loadFromAlmaX($holding_id) {
 		global $grima;
-		$this->xml = $grima->getHolding('X',$holding_id);
+
+		$mms_id = Holding::getMmsFromHoldingID($holding_id);
+		$this->xml = $grima->getHolding($mms_id,$holding_id);
+		$this['mms_id'] = $mms_id;
 	}
 // }}}
 
@@ -2241,12 +2368,23 @@ class Holding extends AlmaObjectWithMARC {
 	}
 // }}}
 
+// {{{ Holding -> getItems - get items objects
+/**
+ * @brief populate items property with Items objects ## XXX TEST
+ */
+	function getItems() {
+		$this->getItemList();
+		$this->items =& $this->itemList->items;
+	}
+// }}}
+
 // {{{ getItemList - populates itemList property from Alma
 /**
  * @brief populates itemList property from Alma
  */
 	function getItemList() {
 		global $grima;
+		$this->getMmsIfNeeded();
 		$this->itemList = new ItemList($this['mms_id'],$this['holding_id']);
 	}
 // }}}
@@ -2351,6 +2489,8 @@ class Item extends AlmaObject {
 		'statistics_note_3' => '//statistics_note_3',
 		'requested' => '//requested',
 		'physical_condition' => '//physical_condition',
+		'temp_library' => '//temp_library',
+		'temp_location' => '//temp_location',
 	);
 
 // {{{ loadFromAlma (get)
@@ -2615,8 +2755,6 @@ class ElectronicService extends AlmaObject {
 		while ($this->getPortfolios(100,0)) {
 			foreach($this->portfolios as $portfolio) {
 				$portfolio->deleteFromAlma($bib_treat);
-				print "DELETED ONE";
-				exit;
 			}
 			$this->portfolios = array();
 			sleep(2);
@@ -2664,7 +2802,8 @@ class ElectronicPortfolio extends AlmaObject {
 		'collection_id' => '//electronic_collection/id',
 		'service_id' => '//electronic_collection/service',
 		'material_type' => '//material_type',
-		'url_type' => '//url_type'
+		'url_type' => '//url_type',
+		'public_note' => '//public_note'
 	);
 // }}}
 
@@ -2723,6 +2862,16 @@ class ElectronicPortfolio extends AlmaObject {
 	function loadFromPortfolioListNode($node) {
 		$this->xml = new DomDocument();
 		$this->xml->appendChild($this->xml->importNode($node,true));
+	}
+// }}}
+
+// {{{ ElectronicPortfolio -> updateAlma 
+/**
+ * @brief replaces the Portfolio in Alma
+ */
+	function updateAlma() {
+		global $grima;
+		$this->xml = $grima->putElectronicPortfolioOnBib($this['mms_id'],$this['portfolio_id'],$this->xml);
 	}
 // }}}
 
@@ -2901,6 +3050,58 @@ class Location extends AlmaObject {
 		$this->xml = $grima->getLocation($libraryCode, $locationCode);
 	}
 // }}}
+
+}
+
+// }}}
+
+// {{{ class AnalyticsReport
+/** class AnalyticsReport */
+class AnalyticsReport extends AlmaObject {
+
+public $path;
+public $filter;
+public $reportXml;
+public $rows = array();
+
+// {{{ AnalyticsReport -> runReport
+/**
+ * @brief pull Analytics report from Alma
+ *
+ * @param String $code - code of location to pull from Alma
+ */
+	function runReport($filter_params=array(), $limit = -1, $token = "") {
+		global $grima;
+		if (isset($this->filter)) {
+			$passfilter = $this->filter;
+			foreach ($filter_params as $k => $v) {
+				$passfilter = str_replace('{'.$k.'}',urlencode($v),$passfilter);
+			}
+		} else {
+			$passfilter = null;
+		}
+ 
+		if ($limit == -1) { $limit = 1000; } # no limit
+		if ($limit < 25) { $limit = 25; } # must be in chunks of 25
+		$this->reportXml = $grima->getAnalytics($this->path, $passfilter, $limit, $token);
+
+		$xpath = new DomXpath($this->reportXml);
+		$xpath->registerNamespace("x", "urn:schemas-microsoft-com:xml-analysis:rowset");
+
+		$rows = $xpath->query('//x:Row');
+		foreach ($rows as $row) {
+			$newrow = array();
+			$cols = $xpath->query("./*[contains(name(),'Column')]", $row);
+			foreach ($cols as $col) {
+				$newrow[] = $col->nodeValue;
+			}
+			$this->rows[] = $newrow;
+		}
+
+	}
+
+// }}}
+
 
 }
 

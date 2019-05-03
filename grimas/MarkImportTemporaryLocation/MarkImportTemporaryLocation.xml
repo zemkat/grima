@@ -1,0 +1,27 @@
+<GrimaForm>
+	<Title>Grima: Mark Import as Temporary Location</Title>
+	<Field
+		name="job_id"
+		label="Job ID"
+		shortname="j"
+		autocomplete="off"
+		required="yes"
+		placeholder="Job to mark temporary"
+	/>
+	<Field
+		name="temp_library"
+		label="Temporary Library"
+		shortname="l"
+		autocomplete="on"
+		required="yes"
+		placeholder="Temporary Library"
+	/>
+	<Field
+		name="temp_location"
+		label="Temporary Location"
+		shortname="o"
+		autocomplete="on"
+		required="yes"
+		placeholder="Temporary Location"
+	/>
+</GrimaForm>
