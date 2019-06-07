@@ -13,8 +13,6 @@ foreach ($local_stylesheets as $src):
 ?>
     <link rel="stylesheet" href="<?=$e($href.$src)?>" integrity="<?=$e($integrity)?>"/>
 <?php break ?>
-<?php else: ?>
-    <!-- no <?= $src ?> -->
 <?php endif ?>
 <?php endforeach ?>
 <?php endforeach ?>

@@ -19,6 +19,7 @@ be very powerful and speed up your work!
 ### Add New Records
 * [CreateBriefBib](../grimas/CreateBriefBib/CreateBriefBib.md) -- create a brief bib with specified 245a
 * [DuplicateBib](../grimas/DuplicateBib/DuplicateBib.md) -- create a duplicate copy of a bib
+* [MoreItems](../grimas/MoreItems/MoreItems.md) -- add more items to a journal or set, based on the first one
 
 ### Delete Records
 * [DeleteTree](../grimas/DeleteTree/DeleteTree.md) -- delete bib and all of its inventory from Alma

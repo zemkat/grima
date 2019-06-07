@@ -24,6 +24,7 @@ grimas below:
 ### Add New Records
 * [CreateBriefBib](grimas/CreateBriefBib/CreateBriefBib.php) -- create a brief bib with specified 245a
 * [DuplicateBib](grimas/DuplicateBib/DuplicateBib.php) -- create a duplicate copy of a bib
+* [MoreItems](grimas/MoreItems/MoreItems.php) -- add more items to a serial or set, based on the first one
 
 ### Delete Records
 * [DeleteTree](grimas/DeleteTree/DeleteTree.php) -- delete bib and all of its inventory from Alma

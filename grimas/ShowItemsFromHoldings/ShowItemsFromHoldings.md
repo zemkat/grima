@@ -1,5 +1,7 @@
 # Show Items from Holdings - show a table of all items on a holding
 
+*Inspired by Alma Enhancement Request #5489, #5615*
+
 This grima shows a table of all the items in the specified holding.
 
 If the holding was created before today, the grima will query an Analytics

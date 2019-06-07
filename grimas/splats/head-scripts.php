@@ -20,8 +20,6 @@ foreach ($local_scripts as $src):
 ?>
     <script src="<?=$e($href.$src)?>" integrity="<?=$e($integrity)?>"></script>
 <?php break ?>
-<?php else: ?>
-    <!-- no <?= $src ?> -->
 <?php endif ?>
 <?php endforeach ?>
 <?php endforeach ?>

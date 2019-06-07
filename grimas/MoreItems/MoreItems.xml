@@ -1,0 +1,54 @@
+<GrimaForm>
+    <Title>Grima: Add more items</Title>
+    <Field
+        label="Barcode of model item"
+        name="barcode_model"
+        required="yes"
+        placeholder="Scan barcode..."
+    />
+    <Field
+        name="barcode"
+		required="no"
+        visible="no"
+    />
+    <Field
+        name="enumeration_a"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="enumeration_b"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="chronology_i"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="chronology_j"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="description"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="policy"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="physical_material_type"
+        required="no"
+        visible="no"
+    />
+    <Field
+        name="adding"
+        required="no"
+        visible="no"
+    />
+</GrimaForm>

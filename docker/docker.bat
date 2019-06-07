@@ -15,10 +15,11 @@ set port=19290
   if "%apikey%" == "" (
 	echo Using persistance database
 	if not exist %persist% md %persist%
-	Rem docker.exe run --detach --rm --name grima --publish %port%:19290 --volume %persist%:/home/grima/persist --env DATABASE_URL=%DATABASE_URL% "zemkat/grima"
+	docker.exe run --detach --rm --name grima --publish %port%:19290 --volume %persist%:/home/grima/persist --env DATABASE_URL=%DATABASE_URL% "zemkat/grima"
   ) else (
 	echo Using environment variables
-	rem docker.exe run --detach --rm --name grima --publish %port%:19290 --env apikey=%apikey% --env server=%server% "zemkat/grima"
+	docker.exe run --detach --rm --name grima --publish %port%:19290 --env apikey=%apikey% --env server=%server% "zemkat/grima"
   )
-  start "http://localhost:%port%"
+  echo Opening your browser to "http://localhost:%port%"
+  start http://localhost:%port%
 )

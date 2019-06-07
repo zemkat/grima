@@ -4,7 +4,6 @@
 <?=$t('head')?>
   </head>
   <body>
-    <div class="jumbotron">
       <div class="container task-<?=$e($basename)?>">
         <div class="container mt-4 position-relative">
           <div class="position-absolute mx-auto help-button">
@@ -14,6 +13,5 @@
         <!-- success -->
 <?= $t('success') ?>
       </div>
-    </div>
   </body>
 </html>

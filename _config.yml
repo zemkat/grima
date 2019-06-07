@@ -19,6 +19,7 @@ exclude: [
   "broken-toys",
   "config",
   "dist/",
+  "docker/",
   "docs/samples",
   "node_modules",
   "package.json",

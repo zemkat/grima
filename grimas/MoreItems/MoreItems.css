@@ -1,0 +1,22 @@
+.text-lg {
+    font-size: 125%;
+}
+.znew {
+    background-color: #ffff00;
+}
+
+label {
+	font-weight: bold;
+}
+
+body {
+	min-height: 100vh;
+	background-color: rgba(0,0,0,0.3);
+}
+
+h1 {
+	background-color: rgba(255,255,255,0.7);
+	border-radius: 0.1em;
+	padding-top: 0.2em;
+	padding-bottom: 0.2em;
+}
