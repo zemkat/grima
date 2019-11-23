@@ -45,7 +45,18 @@ function makeLinksRelative( document, baseDir ) {
 
 function recurse( dir, htmlBaseDir, realBaseDir ) {
   for (const dirEnt of fs.readdirSync( realBaseDir, {withFileTypes:true})) {
-    if (dirEnt.isDirectory()) {
+    if (typeof dirEnt === "string") { // node 8, EOL Jan 2020
+      if (fs.statSync( path.join( realBaseDir, dirEnt ) ).isDirectory()) {
+        const newDir = dirEnt;
+        if (newDir==="dev") continue;
+        const newHtmlBaseDir = path.join( htmlBaseDir, newDir );
+        const newRealBaseDir = path.join( realBaseDir, newDir );
+        recurse( newDir, newHtmlBaseDir, newRealBaseDir );
+      } else if (dirEnt.endsWith(".html")) {
+        const file = path.join( realBaseDir, dirEnt );
+        relativeVersion( file, htmlBaseDir );
+      }
+    } else if (dirEnt.isDirectory()) { // node 10+
       const newDir = dirEnt.name;
       if (newDir==="dev") continue;
       const newHtmlBaseDir = path.join( htmlBaseDir, newDir );
