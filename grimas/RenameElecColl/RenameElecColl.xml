@@ -1,0 +1,19 @@
+<GrimaForm>
+	<Title>Grima: Rename Electronic Collection</Title>
+	<Field
+		name="collection_id"
+		label="Collection ID"
+		shortname="c"
+		autocomplete="off"
+		required="yes"
+		placeholder="ID of collection to rename..."
+	/>
+	<Field
+		name="public_name"
+		label="New Name:"
+		shortname="n"
+		autocomplete="off"
+		required="yes"
+		placeholder="New name for collection..."
+	/>
+</GrimaForm>

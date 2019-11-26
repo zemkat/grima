@@ -24,7 +24,7 @@ class ResolveLink extends GrimaTask {
 			$url = $m[1];
 			$this->splatVars['url'] = $url;
 		} else {
-			throw new Exception("Could not find Location");
+			throw new Exception("Could not find Location: $output");
 		}
 	}
 

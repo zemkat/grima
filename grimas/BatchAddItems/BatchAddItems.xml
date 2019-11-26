@@ -1,0 +1,19 @@
+<GrimaForm>
+	<Title>Grima: Batch Add Items</Title>
+	<Field
+		name="item"
+		label="Item to duplicate"
+		shortname="m"
+		autocomplete="off"
+		required="yes"
+		placeholder="Item record to duplicate..."
+	/>
+    <Field
+        name="barcodes"
+        label="Barcodes for new items"
+        autocomplete="off"
+        required="yes"
+        placeholder="Barcodes, one per line, for items to create"
+        rows="5"
+    />
+</GrimaForm>

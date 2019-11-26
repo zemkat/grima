@@ -1,0 +1,11 @@
+<GrimaForm>
+    <Title>Grima: Move from JE to JF</Title>
+    <Field
+        name="barcode"
+        label="Barcode"
+        shortname="b"
+        autocomplete="off"
+        required="yes"
+        placeholder="Barcode of resource..."
+        />
+</GrimaForm>

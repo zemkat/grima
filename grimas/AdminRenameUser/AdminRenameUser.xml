@@ -21,6 +21,7 @@
 		required="no"
 		placeholder="Institution..."
 		persistent="yes"
+		dataset="institutions"
 	/>
 	<Field
 		name="redirect_url"

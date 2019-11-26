@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Delete Portfolios from Collection</Title>
+	<Field
+		name="collection_id"
+		label="Collection ID"
+		shortname="c"
+		autocomplete="off"
+		required="yes"
+		placeholder="Collection to clear..."
+	/>
+</GrimaForm>

@@ -1,0 +1,31 @@
+<GrimaForm>
+    <Title>Grima: Portfolio for ETD</Title>
+    <Field
+        name="mms_id"
+        label="MMS ID"
+        shortname="m"
+        autocomplete="off"
+        required="yes"
+        placeholder="MMS ID of resource..."
+        />
+    <Field
+        name="url"
+        label="URL (or 856 field)"
+        shortname="u"
+        autocomplete="off"
+        required="yes"
+        placeholder="URL for portfolio..."
+        />
+    <Field
+        name="type"
+        label="Type of ETD:"
+        type="select"
+        required="yes"
+        placeholder="Example: Dissertation"
+        >
+        <option value="DISSERTATION">Dissertation</option>
+        <option value="MASTERTHESIS">Master Thesis</option>
+        <option value="other">other</option>
+    </Field>
+
+</GrimaForm>

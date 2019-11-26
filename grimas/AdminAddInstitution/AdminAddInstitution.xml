@@ -6,6 +6,7 @@
 		autocomplete="off"
 		required="yes"
 		placeholder="Name of institution..."
+		dataset="institutions"
 	/>
 	<Field
 		name="apikey"

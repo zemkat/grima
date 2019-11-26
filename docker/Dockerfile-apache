@@ -1,0 +1,8 @@
+ARG phpImg=php:apache
+FROM $phpImg
+ENV APACHE_PORT=19290 SESSION_MODULE=files SESSION_PATH=/tmp/grima DATABASE_URL=sqlite:/tmp/grima/grima.sql apikey= server=
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+COPY vhost.conf /etc/apache2/sites-enabled/000-default.conf
+COPY ports.conf /etc/apache2/ports.conf
+EXPOSE $APACHE_PORT
+COPY dist /var/www/html

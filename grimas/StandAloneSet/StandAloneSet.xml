@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Make Portfolios in Set Standalone</Title>
+	<Field
+		name="set_id"
+		label="Set ID"
+		shortname="s"
+		autocomplete="off"
+		required="yes"
+		placeholder="Set with portfolios to make standalone"
+	/>
+</GrimaForm>

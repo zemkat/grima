@@ -1,0 +1,14 @@
+FROM ubuntu:19.10
+
+# basic packages
+RUN apt-get update && apt-get install -y \
+  advancecomp \
+  build-essential \
+  curl \
+  doxygen \
+  git \
+  ruby-full \
+  zlib1g-dev \
+  && true && \
+  gem install github-pages bundler \
+  && true

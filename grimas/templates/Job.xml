@@ -1,0 +1,14 @@
+<job>
+    <id />
+    <name />
+    <description />
+    <type />
+    <category />
+    <content />
+    <schedule />
+    <creator />
+    <next_run />
+	<parameters />
+    <related_profile />
+    <additional_info />
+</job>

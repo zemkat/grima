@@ -12,77 +12,46 @@
 ##  github.
 ##
 
-all: release
+all:	build-dist
 
-release: doxygen jekyll tgz
+build-dist:
+	if command -v bundle >/dev/null && command -v npm >/dev/null && command -v doxygen >/dev/null ; then make build-dist-locally ; else make build-dist-with-docker ; fi
 
-tgz: doxygen jekyll
-	mkdir -p releases
-	TAGNAME=$$(git describe --dirty --tags) ; \
-	mv dist "grima-$$TAGNAME" && \
-	tar -zcf "releases/grima-$$TAGNAME.tgz" "grima-$$TAGNAME" && \
-	mv "grima-$$TAGNAME" dist
+build-dist-with-docker:
+	docker run --rm -u $$(id -u):$$(id -g) -v $$(pwd):/work -w /work --name grima-build zemkat/grima-build make build-dist-locally
 
-phar:
-	cd dist && php -d phar.readonly=0 CreatePhar.php
+build-dist-locally: doxygen jekyll
 
-.bundle/vendor/bundle:
-	bundle install --path .bundle/vendor/bundle
+build-docker-apache:
+	rsync -a --delete dist/ docker/dist/
+	rm -f dist/BUGS.* dist/TODO.* dist/grimas-* dist/standalone.sh
+	cd docker && docker build -t zemkat/grima:apache -f ./Dockerfile-apache .
+	cd docker && docker build -t zemkat/grima:kubernetes -f ./Dockerfile-kubernetes .
+	rm -rf docker/dist
 
-node_modules:
-	npm install
+build-docker-builder:
+	cd docker && docker build -t zemkat/grima-build -f ./Dockerfile-build .
 
-jekyll: | .bundle/vendor/bundle node_modules
-	bundle exec jekyll b
-	rm -f dist/.htaccess
+jekyll:
+	jekyll b
+	cd dist ; ruby ../fix_urls.rb
 	chmod og+rX -R dist
-	node fix_urls.js 2>/dev/null
 	mv dist/index.html dist/README-github.html
 	mv dist/README.md  dist/README-github.md
 	mv dist/README-site.html dist/index.html
 	mv dist/README-site.md   dist/README.md
 
-doxygen:
+doxygen: docs/dev/index.html
+
+docs/dev/index.html: grimas/grima-lib.php
 	rm -rf docs/dev
 	mkdir -p docs/dev
 	doxygen > docs/dev/doxygen.log 2>&1
+	advpng -z -4 $$(find docs/dev -iname '*.png')
 
-
-########################################################################
-##
-##  Local testing
-##
-##  "make local" will run a small php server (on unix like systems)
-##  Connect to http://127.0.0.1:32900/ to see it.
-##
-##  If you have docker installed, 
-##  "make php72" will run php 7.2 on http://127.0.0.1:32972/
-##  "make php56" will run php 5.6 on http://127.0.0.1:32956/
-##
-
-export DATABASE_URL=sqlite:$(PWD)/standalone-config.sql
-HOST=127.0.0.1
-
-php72:IMAGE=php:7.2
-php71:IMAGE=php:7.1
-php70:IMAGE=php:7.0
-php56:IMAGE=php:5.6
-php55:IMAGE=php:5.5
-php54:IMAGE=php:5.4
-
-local:PORT=32900
-local:
-	php -S $(HOST):$(PORT)
-
-php%:PORT=329$*
-php%:
-	docker run \
-		--user $$(id -u) \
-		--workdir /work \
-		--volume $(PWD):/work \
-		--publish $(PORT):$(PORT) \
-		--expose $(PORT) \
-		-it \
-		--rm \
-		$(IMAGE) \
-		php -S $(HOST):$(PORT)
+tgz:
+	mkdir -p releases
+	TAGNAME=$$(git describe --dirty --tags) ; \
+	mv dist "grima-$$TAGNAME" && \
+	tar -zcf "releases/grima-$$TAGNAME.tgz" "grima-$$TAGNAME" && \
+	mv "grima-$$TAGNAME" dist

@@ -1,0 +1,10 @@
+<GrimaForm>
+	<Title>Grima: Recycle</Title>
+	<Field
+		name="mms_id"
+		label="MMS ID"
+		autocomplete="off"
+		required="yes"
+		placeholder="ID of bib to recycle..."
+	/>
+</GrimaForm>

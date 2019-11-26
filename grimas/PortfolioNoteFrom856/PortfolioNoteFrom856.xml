@@ -1,0 +1,19 @@
+<GrimaForm>
+	<Title>Grima: Portfolio Note from 856</Title>
+	<Field
+		name="mms_id"
+		label="MMS ID"
+		shortname="m"
+		autocomplete="off"
+		required="yes"
+		placeholder="Bib ID of record with 856s..."
+	/>
+	<Field
+		name="portfolio_id"
+		label="Portfolio ID (if needed to specify)"
+		shortname="p"
+		autocomplete="off"
+		required="no"
+		placeholder="Portfolio ID of portfolio needing note..."
+	/>
+</GrimaForm>

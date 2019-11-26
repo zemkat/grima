@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Function Test</Title>
+	<Field
+		name="set_id"
+		label="Set ID"
+		shortname="s"
+		autocomplete="off"
+		required="yes"
+		placeholder="Set to run function on..."
+	/>
+</GrimaForm>

@@ -7,7 +7,8 @@
 
 require_once("grima-util.php");
 require_once("grima-xmlbag.php");
-require_once "grima-splats.php";
+require_once("grima-splats.php");
+require_once("MARC21.php");
 
 // {{{ class Grima
 /** @class Grima */
@@ -20,9 +21,16 @@ class Grima {
 	function session_init( $force = false ) {
 		if( !isset($_SESSION) ) {
 			$session_name = 'grima';
-			$session_dir = join_paths( sys_get_temp_dir(), 'grima' );
-			@mkdir($session_dir, 0777, true);
-			session_save_path($session_dir);
+			if (getenv('SESSION_MODULE')) {
+				session_module_name(getenv('SESSION_MODULE'));
+			}
+			if (getenv('SESSION_PATH')) {
+				session_save_path(getenv('SESSION_PATH'));
+			} else {
+				$session_dir = join_paths( sys_get_temp_dir(), 'grima' );
+				@mkdir($session_dir, 0777, true);
+				session_save_path($session_dir);
+			}
 			session_name( $session_name );
 			session_set_cookie_params(365*24*60*60); # one year
 			ini_set('session.gc_maxlifetime',525600*60); # of love
@@ -99,10 +107,9 @@ class Grima {
 			return true;
 		}
 
-		if ( isset($_ENV['apikey']) and isset($_ENV['server']) and
-				($_ENV['apikey']) and ($_ENV['server'])) {
-			$this->apikey = $_ENV['apikey'];
-			$this->server = $_ENV['server'];
+		if ( getenv('apikey') and getenv('server') ) {
+			$this->apikey = getenv('apikey');
+			$this->server = getenv('server');
 			return true;
 		}
 
@@ -118,6 +125,77 @@ class Grima {
 
 // {{{ REST - get/post/put/delete
 
+// {{{ request - general function for API calls
+/**
+ * @brief general function for REST API calls
+ *
+ * @param string $method - GET, POST, PUT, or DELETE
+ * @param string $url - URL pattern string with parameters in {}
+ * @param array $URLparams - URL parameters
+ * @param array $QSparams - query string parameters
+ * @param array $body - body content (xml)
+
+ * @return DomDocument of requested record
+ */
+	function request($method, $url, $URLparams, $QSparams, $body=null) {
+		$headers = array(
+			'Authorization: apikey ' . urlencode($this->apikey),
+			"Accept: application/xml",
+		);
+
+		// Change "/almaws/v1/users/{user_id}" to "/almaws/v1/users/${URLparams['user_id']}"
+		foreach ($URLparams as $k => $v) {
+			if (!$v) { throw new Exception("URL parameter $k is empty in $method $url"); }
+			$url = str_replace('{'.$k.'}',urlencode($v),$url);
+		}
+
+		// Include APIKey in url
+		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey) . '&format=xml';
+
+		// Include query string parameters too
+		foreach ($QSparams as $k => $v) {
+			$url .= "&$k=$v";
+		}
+
+		// Include XML based body as well
+		// XXX: detect if JSON is more appropriate?
+		if ($body) {
+			$bodyxml = $body->saveXML();
+			$headers[] = 'Content-Type: application/xml';
+		}
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+		curl_setopt($ch, CURLOPT_HEADER, FALSE);
+		curl_setopt($ch, CURLOPT_SSL_CIPHER_LIST, 'DEFAULT@SECLEVEL=1');
+		if (isset($bodyxml)) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyxml);
+		}
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
+
+		$response = curl_exec($ch);
+
+		$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+		if (curl_errno($ch)) {
+			throw new Exception("Network error: " . curl_error($ch));
+		}
+		curl_close($ch);
+		if ($code == 204) return; // no body
+		$xml = new DOMDocument();
+
+		try {
+			$xml->loadXML($response);
+		} catch (Exception $e) {
+			throw new Exception("Malformed XML from Alma:\n$method $url -> $code\n$e");
+		}
+
+		return $xml;
+	}
+// }}}
+
 // {{{ get - general function for GET (retrieve) API calls
 /**
  * @brief general function for GET (retrieve) API calls
@@ -128,36 +206,7 @@ class Grima {
  * @return DomDocument of requested record
  */
 	function get($url,$URLparams,$QSparams) {
-		# returns a DOM document
-		foreach ($URLparams as $k => $v) {
-			$url = str_replace('{'.$k.'}',urlencode($v),$url);
-		}
-		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey);
-		foreach ($QSparams as $k => $v) {
-			$url .= "&$k=$v";
-		}
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-		curl_setopt($ch, CURLOPT_HEADER, FALSE);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-		$response = curl_exec($ch);
-		$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
-		if (curl_errno($ch)) {
-			throw new Exception("Network error: " . curl_error($ch));
-		}
-		curl_close($ch);
-		$xml = new DOMDocument();
-		try {
-			if (!preg_match('/^</',$response)) {
-				throw new Exception($url);
-			}
-			$xml->loadXML($response);
-		} catch (Exception $e) {
-			throw new Exception("Malformed XML from Alma: $e");
-		}
-		return $xml;
+		return $this->request("GET",$url,$URLparams,$QSparams,null);
 	}
 // }}}
 
@@ -172,36 +221,7 @@ class Grima {
  * @return DomDocument $body - object as it now appears in Alma
  */
 	function post($url,$URLparams,$QSparams,$body) {
-		foreach ($URLparams as $k => $v) {
-			$url = str_replace('{'.$k.'}',urlencode($v),$url);
-		}
-		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey);
-		foreach ($QSparams as $k => $v) {
-			$url .= "&$k=$v";
-		}
-
-		$bodyxml = $body->saveXML();
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_HEADER, FALSE);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyxml);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/xml'));
-		$response = curl_exec($ch);
-		$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
-		if (curl_errno($ch)) {
-			throw new Exception("Network error: " . curl_error($ch));
-		}
-		curl_close($ch);
-		$xml = new DOMDocument();
-		try {
-			$xml->loadXML($response);
-		} catch (Exception $e) {
-			throw new Exception("Malformed XML from Alma: $e");
-		}
-		return $xml;
+		return $this->request("POST",$url,$URLparams,$QSparams,$body);
 	}
 // }}}
 
@@ -216,36 +236,7 @@ class Grima {
  * @return DomDocument - record as it now appears in Alma
  */
 	function put($url,$URLparams,$QSparams,$body) {
-		foreach ($URLparams as $k => $v) {
-			$url = str_replace('{'.$k.'}',urlencode($v),$url);
-		}
-		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey);
-		foreach ($QSparams as $k => $v) {
-			$url .= "&$k=$v";
-		}
-
-		$bodyxml = $body->saveXML();
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_HEADER, FALSE);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyxml);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/xml'));
-		$response = curl_exec($ch);
-		$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
-		if (curl_errno($ch)) {
-			throw new Exception("Network error: " . curl_error($ch));
-		}
-		curl_close($ch);
-		$xml = new DOMDocument();
-		try {
-			$xml->loadXML($response);
-		} catch (Exception $e) {
-			throw new Exception("Malformed XML from Alma: $e");
-		}
-		return $xml;
+		return $this->request("PUT",$url,$URLparams,$QSparams,$body);
 	}
 // }}}
 
@@ -256,37 +247,10 @@ class Grima {
  * @param string $url - URL pattern string with parameters in {}
  * @param array $URLparams - URL parameters
  * @param array $QSparams - query string parameters
+ * @return null|DomDocument - usually return nothing, but return the error document on error
  */
 	function delete($url,$URLparams,$QSparams) {
-		foreach ($URLparams as $k => $v) {
-			$url = str_replace('{'.$k.'}',urlencode($v),$url);
-		}
-		$url = $this->server . $url . '?apikey=' . urlencode($this->apikey);
-		foreach ($QSparams as $k => $v) {
-			$url .= "&$k=$v";
-		}
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_HEADER, FALSE);
-		curl_setopt($ch, CURLOPT_HTTPHEADER,
-			array ("Accept: application/xml"));
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-		$response = curl_exec($ch);
-		$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
-		if (curl_errno($ch)) {
-			throw new Exception("Network error: " . curl_error($ch));
-		}
-		curl_close($ch);
-		if ($code != 204) {
-			$xml = new DOMDocument();
-			try {
-				$xml->loadXML($response);
-			} catch (Exception $e) {
-				throw new Exception("Malformed XML from Alma: $e");
-			}
-			return $xml;
-		}
+		return $this->request("DELETE",$url,$URLparams,$QSparams,null);
 	}
 // }}}
 
@@ -745,7 +709,7 @@ class Grima {
  * Makes a call to the API:
  * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/bibs/#Catalog)
  *
- *      GET /almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}
+ *	GET /almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}
  *
  * @param string $mms_id ID of bib record
  * @param string $portfolio_id ID of portfolio
@@ -795,16 +759,19 @@ class Grima {
  *
  *		POST /almaws/v1/bibs/{mms_id}/portfolios/
  *
- * @param string $portfolio_id ID of portfolio
+ * @param string $mms_id ID of bib
+ * @param ElectronicPortfolio $portfolio portfolio to add
+ * @param string $mms_id ID of bib
  * @return DomDocument Electronic Portfolio object as it appears in Alma
 */
-	function postElectronicPortfolioOnBib($mms_id,$portfolio) {
+	function postElectronicPortfolioOnBib($mms_id,$portfolio,$update = true) {
 		$ret = $this->post('/almaws/v1/bibs/{mms_id}/portfolios/',
 			array('mms_id' => $mms_id),
 			array(),
 			$portfolio
 			);
 		$this->checkForErrorMessage($ret);
+		if ($update) { $portfolio->loadXML($ret->saveXML()); }
 		return $ret;
 	}
 // }}}
@@ -926,6 +893,30 @@ class Grima {
 	}
 // }}}
 
+// {{{ putElectronicCollection (Update Electronic Collection)
+/**
+ * @brief Update Electronic Collection Record - updates the copy of the collection in Alma
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/electronic/#Resources)
+ *
+ * PUT /almaws/v1/electronic/e-collections/{collection_id}	 
+ *
+ * @param string $collection_id Alma ElectronicCollection record to update
+ * @param DomDocument $collection ElectronicCollection to replace old record
+ * @return DomDocument ElectronicCollection object as it now appears in Alma https://developers.exlibrisgroup.com/alma/apis/xsd/rest_bib.xsd?tags=GET
+ */
+	function putElectronicCollection($collection_id,$collection) {
+		$ret = $this->put('/almaws/v1/electronic/e-collections/{collection_id}',
+			array('collection_id' => $collection_id),
+			array(),
+			$collection
+			);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
 // {{{ getElectronicServices (Retrieve Electronic Services)
 /**
  * @brief Retrieve Electronic Services - retrieve a list of services from
@@ -1039,10 +1030,30 @@ class Grima {
 	}
 // }}}
 
-/*
-	function postSetManageMembers($set_id,$id_type,$op) {
-	}
+// {{{ Set -> postSetManageMembers (Manage Members)
+/**
+ * @brief Manage Members - modify sets in Alma
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/conf#Resources)
+ *
+ *		POST /almaws/v1/conf/sets/{set_id}
+ *
+ * @param string $set_id ID of the set to retrieve
+ * @param string $id_type type of identifier used to identify members
+ * @param string $op operation to perform on the set
+ * @param DomDocument $set to do the operation with
+ * @return DomDocument Set object
 */
+	function postSetManageMembers($set_id,$id_type,$op,$set) {
+		$ret = $this->post('/almaws/v1/conf/sets/{set_id}',
+			array('set_id' => $set_id),
+			array('id_type' => $id_type, 'op' => $op),
+			$set,
+			);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
 
 // {{{ Set -> createSetFromImport (Create a Set)
 /**
@@ -1071,16 +1082,16 @@ class Grima {
 
 /*
   Content:
-    BIB_MMS -- all titles
-    ITEM
-    PORTFOLIO
-    IEPA
-    FILE
-    AUTHORITY_MMS
-    IEP
-    IEE
-    IED
-    IEC
+	BIB_MMS -- all titles
+	ITEM
+	PORTFOLIO
+	IEPA
+	FILE
+	AUTHORITY_MMS
+	IEP
+	IEE
+	IED
+	IEC
 */
 
 /*
@@ -1160,6 +1171,39 @@ class Grima {
 
 /**@}*/
 //}}}
+
+//{{{Job APIs
+/**@name Job APIs */
+/**@{*/
+
+// {{{ postJob (Submit a manual or scheduled job)
+/**
+ * @brief Submit a manual or scheduled job
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/conf#Resources)
+ *
+ *		POST /almaws/v1/conf/jobs/{job_id}
+ *
+ * @param string $job_id of job to run
+ * @param op $op operation to perform
+ * @param DomDocument $job job to run
+ * @return DomDocument ??
+*/
+	function postJob($job_id, $op, $job) {
+		$ret = $this->post('/almaws/v1/conf/jobs/{job_id}',
+			array('job_id' => $job_id),
+			array('op' => $op),
+			$job,
+			);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
+/**@}*/
+//}}}
+
 
 }
 
@@ -1501,6 +1545,7 @@ class GrimaFormField {
 	public $persistent;
 	public $visible;
 	public $rows;
+	public $dataset;
 	protected $autocomplete;
 	protected $highlight;
 	public $error_condition = ""; /* can be warning or error */
@@ -1553,9 +1598,22 @@ class GrimaFormField {
 		$this->persistent = $this->booly($field->getAttribute('persistent'),false);
 		$this->autocomplete = $this->booly($field->getAttribute('autocomplete'),false);
 		$this->visible = $this->booly($field->getAttribute('visible'),true);
+		$this->dataset = $field->getAttribute('dataset');
 		$this->options = array();
-		foreach ($field->getElementsByTagName("option") as $option) {
-			$this->options[] = $option->ownerDocument->saveXML( $option );
+		if ($this->dataset) {
+			if ($this->dataset == "institutions") {
+				$institutions = GrimaDB::getInstitutions();
+				$currentUser = GrimaUser::GetCurrentUser();
+				foreach ($institutions as $institution) {
+					$i = htmlspecialchars($institution);
+					$s = ($institution === $currentUser['institution']) ? ' selected="selected"' : '';
+					$this->options[] = "<option value=\"$i\"$s>$i</option>";
+				}
+			}
+		} else {
+			foreach ($field->getElementsByTagName("option") as $option) {
+				$this->options[] = $option->ownerDocument->saveXML( $option );
+			}
 		}
 	}
 // }}}
@@ -1626,6 +1684,50 @@ class AlmaObject implements ArrayAccess {
 */
 class AlmaObjectWithMARC extends AlmaObject {
 
+	public $marc; # Normac MARC21Record
+
+	function useNormac() {
+		if (isset($this->marc)) { return; }
+		$this->marc = new MARC21Record();
+		$this->marc->loadFromString($this->xml->saveXML());
+	}
+
+// {{{ AlmaObjectWithMARC -> appendFieldN
+/**
+ * @brief add a field to the MARC record using Normac
+ *
+ * @param string $tag a three character MARC tag
+ * @param string $indicators both indicators in one string
+ * @param Array $subfields each entry of the form $code => $value
+ */
+	function appendFieldN($tag,$indicators,$subfields) {
+		$this->useNormac();	# this function uses normac
+		$subarray = array();
+		foreach ($subfields as $k => $v) {
+			$subarray[] = new ISO2709Subfield($k,$v);
+		}
+		$field = new ISO2709Field($tag, null, $indicators, $subarray);
+		$this->marc->AppendField($field);
+	}
+
+	function normacToXML() {
+		if (isset($this->marc)) {
+			$newRecord = new DOMDocument;
+			$newRecord->loadXML($this->marc->asXMLString());
+			#error_log($this->marc->asXMLString());
+
+			$xpath = new DOMXpath($this->xml);
+			$record = $xpath->query('//record');
+			$node = $record[0];
+			$node->parentNode->removeChild($node);
+
+			$node = $this->xml->importNode($newRecord->documentElement, true);
+			$this->xml->documentElement->appendChild($node);
+		}
+	}
+
+// }}}
+
 // {{{ AlmaObjectWithMARC -> appendField
 /**
  * @brief add a field to the MARC record
@@ -1647,20 +1749,35 @@ class AlmaObjectWithMARC extends AlmaObject {
 	}
 // }}}
 
-// {{{ AlmaObjectWithMARC -> getFields # XXX IN PROGRESS
+// {{{ AlmaObjectWithMARC -> getFields 
 /**
  * @brief get fields for the given MARC tag
  *
  * @param String $tag field
- * @return Array of MARC fields -> object?
+ * @return Array of ISO2709Field objects
  */
 	function getFields($tag) {
+		$this->useNormac();	# this function uses normac
+		return $this->marc->getFields($tag);
+	}
+// }}}
+
+// {{{ AlmaObjectWithMARC -> getMarcFields # XXX IN PROGRESS
+/**
+ * @brief get fields for the given MARC tag
+ *
+ * @param String $tag field
+ * @return Array of MARCField Objects
+ */
+	function getMarcFields($tag) {
 		$xpath = new DomXpath($this->xml);
 		$tag = preg_replace('/X*$/','',$tag);
 		$tag = preg_replace('/\.*$/','',$tag);
 		$fields = $xpath->query("//record/datafield[starts-with(@tag,'$tag')]");
 		$fieldarr = array();
 		foreach ($fields as $field) {
+			$marcfield = new MARCField();
+			# indicators?
 			$subfieldarr = array();
 			foreach ($field->childNodes as $child) {
 				$subfieldarr[] = array(
@@ -1764,30 +1881,16 @@ class AlmaObjectWithMARC extends AlmaObject {
 }
 // }}}
 
-// {{{ class MARCField -- # XXX in progress
-/** @class MARCField
- ** @brief MARC fields for use in bibs and holdings
- */
-
-class MARCField {
-	public $tag;
-	public $subfields = array();
-}
-
-class MARCSubfield {
-	public $code;
-	public $value;
-}
-
-// }}}
-
-// {{{ class bib
+// {{{ class Bib
 /** @class bib
  ** @brief bib records returned from alma
  */
 class Bib extends AlmaObjectWithMARC {
 	public $holdingsList; # HoldingsList object
 	public $holdings = array();
+
+	public $itemList;
+	public $items = array();
 
 	public $portfolioList = array(); # just an array for now
 
@@ -1870,6 +1973,8 @@ class Bib extends AlmaObjectWithMARC {
  */
 	function updateAlma() {
 		global $grima;
+		# XXX parent here?
+		$this->normacToXML();
 		$this->xml = $grima->putBib($this['mms_id'],$this->xml);
 	}
 // }}}
@@ -1956,6 +2061,7 @@ class Bib extends AlmaObjectWithMARC {
 			$holding['mms_id'] = $this['mms_id'];
 			$this->holdings[] = $holding;
 		}
+		return $this->holdings;
 	}
 // }}}
 
@@ -1967,10 +2073,11 @@ class Bib extends AlmaObjectWithMARC {
 		global $grima;
 		while ($this->getPortfolioList()) {
 			foreach($this->portfolioList as $portfolio) {
+				error_log("deleting " . $portfolio['pid'] . "\n");
 				$portfolio->deleteFromAlma();
 			}
 			$this->portfolioList = array();
-			sleep(2);
+			sleep(3);
 		}
 	}
 // }}}
@@ -1986,7 +2093,7 @@ class Bib extends AlmaObjectWithMARC {
 
 // {{{ Bib -> getPortfolioList
 /**
- * @brief populate portfolioList property with info from Alma
+ * @brief populate portfolioList property with brief info from Alma
  */
 	function getPortfolioList() { # maybe rename
 		global $grima;
@@ -1999,19 +2106,43 @@ class Bib extends AlmaObjectWithMARC {
 			$newport->loadFromPortfolioListNode($portnode);
 			$this->portfolioList[] = $newport;
 		}
-		return count($ports);
+		return count($ports); # XXX is this the right thing to return?
 	}
 // }}}
 
-/*
-	function recycle() { # XXX
-		global $grima;
-		$recycle_bin = new Set();
-		$recycle_bin->loadFromAlma("9543638640002636");
-		$recycle_bin->addMember($this['mms_id']);
-		# add to recycle bin
+// {{{ Bib -> getPortfolios
+/**
+ * @brief get full portfolios for the bib
+ */
+	function getPortfolios() {
+		$this->getPortfolioList();
+		foreach($this->portfolioList as $port) {
+			$port->loadFromAlma($port['portfolio_id']);
+		}
+		return $this->portfolioList;
 	}
-*/
+// }}}
+
+// {{{ getItems - get items objects
+/**
+ * @brief populate items property with Items objects ## XXX TEST
+ */
+	function getItems() {
+		$this->getItemList();
+		$this->items =& $this->itemList->items;
+		return $this->items;
+	}
+// }}}
+
+// {{{ getItemList - populates itemList property from Alma
+/**
+ * @brief populates itemList property from Alma
+ */
+	function getItemList() { # XXX
+		global $grima;
+		$this->itemList = new ItemList($this['mms_id'],'ALL');
+	}
+// }}}
 
 // {{{ Bib -> get_title_proper
 /** @brief a tidy title proper
@@ -2147,7 +2278,7 @@ class ItemList extends AlmaObject {
 				} else {
 					$req_limit = 100;
 				}
-		 	}
+			}
 			$xml = $grima->getItemList($mms_id,$holding_id,$req_limit,$curr_offset*100);
 			$xpath = new DomXpath($xml);
 			$is = $xpath->query('//item');
@@ -2218,6 +2349,13 @@ class Holding extends AlmaObjectWithMARC {
 		'inst_code' => "/holding/record/datafield[@tag='852']/subfield[@code='a']",
 		'library_code' => "/holding/record/datafield[@tag='852']/subfield[@code='b']",
 		'location_code' => "/holding/record/datafield[@tag='852']/subfield[@code='c']",
+
+		'classification_part' => "/holding/record/datafield[@tag='852']/subfield[@code='h']",
+		'852h' => "/holding/record/datafield[@tag='852']/subfield[@code='h']",
+
+		'item_part' => "/holding/record/datafield[@tag='852']/subfield[@code='i']",
+		'852i' => "/holding/record/datafield[@tag='852']/subfield[@code='i']",
+		'shelving_scheme' => "/holding/record/datafield[@tag='852']/@ind1",
 	);
 // }}}
 
@@ -2290,7 +2428,7 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	}
 // }}}
 
-// {{{ Holding -> addToAlmaBib (post) - adds new holding record to specified bib
+// {{{ addToAlmaBib (post) - adds new holding record to specified bib
 /**
  * @brief adds a new holding record to the specified bib
  *
@@ -2302,6 +2440,18 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 		$this['mms_id'] = $mms_id;
 	}
 // }}}
+
+// {{{ hasItems - checks whether a holding record has any items
+/**
+ * @brief checks whether a holding record has any items
+ *
+ */
+	function hasItems() {
+		$this->getItemList();
+		return (sizeof($this->itemList->items) > 0); # XXX test
+	}
+// }}}
+
 
 // {{{ updateAlma (put) - update record in Alma
 /**
@@ -2323,20 +2473,31 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	}
 // }}}
 
-/*
-	function appendField($tag,$ind1,$ind2,$subfields) {
-		$frag = "<datafield ind1=\"$ind1\" ind2=\"$ind2\" tag=\"$tag\">";
-		foreach ($subfields as $k => $v) {
-			$frag .= "<subfield code=\"$k\">$v</subfield>";
-		}
-		$frag .= "</datafield>";
-		$xpath = new DomXpath($this->xml);
-		$record = $xpath->query("//record");
-		appendInnerXML($record[0],$frag);
-	}
-*/
-
 	# call number object?
+
+	function setCallNumberFromBib() {
+	# must have mms_id set? confirm
+	# must have shelving set? confirm
+
+		$bib = new Bib();
+		$bib->loadFromAlma(); # link?
+		
+		switch($this["shelving_scheme"]) {
+			case '0': # Library of Congress
+				$fields = $bib->getFields("090");
+				foreach ($fields as $field) {
+					$subfields = $field->getSubfields("a");
+					print $field["ind1"];
+					$field["ind1"] = "4";
+					foreach ($subfields as $subfield) {
+						print $subfield["value"];
+						$subfield["value"] = "joe";
+					}
+				}
+			break;
+		}
+
+	}
 
 	function setCallNumber($h,$i,$ind1) {
 		$xpath = new DomXpath($this->xml);
@@ -2368,13 +2529,14 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	}
 // }}}
 
-// {{{ Holding -> getItems - get items objects
+// {{{ getItems - get items objects
 /**
  * @brief populate items property with Items objects ## XXX TEST
  */
 	function getItems() {
 		$this->getItemList();
 		$this->items =& $this->itemList->items;
+		return $this->items;
 	}
 // }}}
 
@@ -2473,7 +2635,7 @@ class Item extends AlmaObject {
 		'receiving_operator' => '//receiving_operator',
 		'process_type' => '//process_type',
 		'in_temp_location' => '//in_temp_location',
- 		'mms_id' => '//mms_id',
+		'mms_id' => '//mms_id',
 		'holding_id' => '//holding_id',
 		'title' => '//title',
 		'call_number' => '//call_number',
@@ -2575,6 +2737,18 @@ class Item extends AlmaObject {
 	}
 // }}}
 
+// {{{ Item -> addToAlmaHoldingX (post)
+/**
+ * @brief add new item record to holding in Alma
+ * @param string $holding_id Holding ID of holding record to add item to
+ * @return DomDocument item object as it now appears in Alma
+ */
+	function addToAlmaHoldingX($holding_id) {
+		$this->addToAlmaHolding('X',$holding_id);
+		return $this->xml;
+	}
+// }}}
+
 // {{{ updateAlma (put)
 /**
  * @brief replace item record in Alma
@@ -2591,7 +2765,7 @@ class Item extends AlmaObject {
 	}
 // }}}
 
-// {{{ Item -> deleteFromAlma (delete)
+// {{{ deleteFromAlma (delete)
 /**
  * @brief delete record from Alma
  *
@@ -2617,9 +2791,10 @@ class ElectronicCollection extends AlmaObject {
 
 
 // {{{ ElectronicCollection -> el_address
-	public $el_address = array(
+	public $el_address = array( # XXX many more fields here
 		'collection_id' => '//id',
 		'id' => '//id',
+		'public_name' => '//public_name',
 	);
 // }}}
 
@@ -2635,7 +2810,18 @@ class ElectronicCollection extends AlmaObject {
 	}
 // }}}
 
-// {{{ ElectronicCollection ->
+// {{{ ElectronicCollection -> updateAlma (put)
+/**
+ * @brief replace the collection record in Alma
+ *
+ */
+	function updateAlma() {
+		global $grima;
+		$this->xml = $grima->putElectronicCollection($this['collection_id'], $this->xml);
+	}
+// }}}
+
+// {{{ ElectronicCollection -> getServices (get) XXX
 /**
  * @brief load record from Alma
  *
@@ -2803,7 +2989,9 @@ class ElectronicPortfolio extends AlmaObject {
 		'service_id' => '//electronic_collection/service',
 		'material_type' => '//material_type',
 		'url_type' => '//url_type',
-		'public_note' => '//public_note'
+		'public_note' => '//public_note',
+		'proxy_enabled' => '//proxy_enabled',
+		'library' => '//library'
 	);
 // }}}
 
@@ -2926,13 +3114,22 @@ class Set extends AlmaObject {
 	public $el_address = array(
 		'set_id' => '//set/id',
 		'id' => '//set/id',
+		'content' => '//content',
 	);
 // }}}
 
+// {{{ Set -> createFromImport
+/**
+ * @brief create a new set in Alma based on a job that just ran
+ *
+ * @param string $job_id - job ID
+ * @param string $population - which records from the job # XXX include here
+ */
 	function createFromImport($job_id,$population) {
 		global $grima;
 		$this->xml = $grima->createSetFromImport($job_id,$population);
 	}
+// }}}
 
 // {{{ Set -> loadFromAlma
 /**
@@ -2943,6 +3140,34 @@ class Set extends AlmaObject {
 	function loadFromAlma($set_id) {
 		global $grima;
 		$this->xml = $grima->getSet($set_id);
+	}
+// }}}
+
+// {{{ Set -> runOnElements
+/**
+ * @brief run a function on every element in the set
+ *
+ * @param string $function name of function to run on set elements, accepts element as first argument
+ * @param array $args list of arguments to pass to function in addition to element
+ * @param string $filter run function on only elements where filter function returns true
+ */
+	function runOnElements($function, $args = array(), $filter = null, $filter_args = array()) { 
+		global $grima;
+		$xml = $grima->getSetMembers($this['set_id'],0);
+		$xpath = new DomXpath($xml);
+		$this->size = $xpath->query("//members")->item(0)->getAttribute("total_record_count");
+		$limit = $this->size;
+		for ($j = 0; $j < ceil($limit/100); $j++) { # how many queries
+			$xml = $grima->getSetMembers($this['id'],100,$j*100);
+			$xpath = new DomXpath($xml);
+			foreach ($xpath->query("//member") as $member) {
+				$id = $member->childNodes[0]->nodeValue;
+				if (!isset($filter) or ($filter($id,$filter_args))) { 
+					$function($id, $args);
+				}
+			}
+		}
+		
 	}
 // }}}
 
@@ -2979,15 +3204,56 @@ class Set extends AlmaObject {
 	}
 // }}}
 
-	function addMember($mms_id) {
-		global $grima;
-	}
+// {{{ Set -> addMember (delete)
+/**
+ * @brief add member to a local set
+ *
+ * @param string $id ID of element to add
+ *
+ */
+	function addMember($id) {
+		$frag = "<member><id>$id</id></member>";
+		$source = new DOMDocument();
+		$source->loadXML($frag);
 
-	function deleteAllMembers() {
+		$xpath = new DomXpath($this->xml);
+		$members = $xpath->query('//members')->item(0);
+		$members->appendChild($this->xml->importNode($source->documentElement, true));
+
+	}
+// }}}
+
+// {{{ Set -> appendInAlma ()
+/**
+ * @brief add elements to a set
+ *
+ * @param Set $setToAppend - set whose members should be added to main set
+ */
+	function appendInAlma($setToAppend) {
 		global $grima;
+		$grima->postSetManageMembers($this['set_id'],null,'add_members',
+			$setToAppend->xml);
+	}
+// }}}
+
+// {{{ Set -> removeAllMembersInAlma ()
+/**
+ * @brief remove all members of the set
+ *
+ */
+	function removeAllMembersInAlma() {
+		global $grima;
+		$emptyset = new Set();
+		$emptyset->addMember('9941266686802636'); /* hack */
+		$grima->postSetManageMembers($this['set_id'],null,'replace_members',
+			$emptyset->xml);
+		$grima->postSetManageMembers($this['set_id'],null,'delete_members',
+			$emptyset->xml);
 	}
 
 }
+
+// }}}
 
 // }}}
 
@@ -3048,6 +3314,57 @@ class Location extends AlmaObject {
 	function loadFromAlma($libraryCode,$locationCode) {
 		global $grima;
 		$this->xml = $grima->getLocation($libraryCode, $locationCode);
+	}
+// }}}
+
+}
+
+// }}}
+
+// {{{ class Job
+/** class Job */
+class Job extends AlmaObject {
+	public $el_address = array(
+		'id' => '//id',
+		'name' => '//name',
+		'description' => '//description',
+		'type' => '//type',
+		'category' => '//category',
+		'content' => '//content',
+		'schedule' => '//schedule',
+		'creator' => '//creator',
+		'next_run' => '//next_run',
+		'related_profile' => '//related_profile',
+		'additional_info' => '//additional_info',
+	);
+
+// {{{ Job -> addParameter
+/**
+ * @brief add a parameter to the job
+ *
+ * @param $name - name of parameter to set
+ * @param $value - value of parameter to set
+ */
+	function addParameter($name,$value) {
+		$frag = "<parameter><name>$name</name><value>$value</value></parameter>";
+		$source = new DOMDocument();
+		$source->loadXML($frag);
+
+		$xpath = new DomXpath($this->xml);
+		$members = $xpath->query('//parameters')->item(0);
+		$members->appendChild($this->xml->importNode($source->documentElement, true));
+	}
+// }}}
+
+// {{{ Job -> runInAlma
+/**
+ * @brief run a job in Alma XXX
+ *
+ * @param DomDocument job
+ */
+	function runInAlma() {
+		global $grima;
+		$grima->postJob($this['id'],'run',$this->xml);
 	}
 // }}}
 
@@ -3137,7 +3454,7 @@ class GrimaDB implements ArrayAccess, IteratorAggregate {
 				$db->exec("CREATE TABLE institutions ( institution VARCHAR(100) PRIMARY KEY, apikey VARCHAR(100), server VARCHAR(100) )");
 			}
 			if (!tableExists($db,"users")) {
-				$db->exec("CREATE TABLE users ( institution VARCHAR(100), username VARCHAR(100), password VARCHAR(255), isAdmin BOOLEAN )");
+				$db->exec("CREATE TABLE users ( institution VARCHAR(100), username VARCHAR(100), password VARCHAR(255), isAdmin INTEGER )");
 			}
 			return true;
 		} catch(Exception $x) {
@@ -3159,12 +3476,28 @@ class GrimaDB implements ArrayAccess, IteratorAggregate {
 		if (!self::$db) {
 			$db_url = getenv('DATABASE_URL');
 			if (!$db_url) $db_url = "sqlite:" . join_paths( sys_get_temp_dir(), "grima/grima.sql");
-			self::$db = new PDO($db_url);
+			if (getenv('DATABASE_USER')&&getenv('DATABASE_PASS')) {
+				self::$db = new PDO($db_url, getenv('DATABASE_USER'), getenv('DATABASE_PASS'));
+			} else {
+				self::$db = new PDO($db_url);
+			}
 		}
 		return self::$db;
 	}
+
 	protected function getPasswordAlgorithm() {
 		return defined("PASSWORD_ARGON2I") ? constant("PASSWORD_ARGON2I") : PASSWORD_DEFAULT;
+	}
+
+	static function getInstitutions() {
+		self::init();
+		$db = self::getDb();
+		$result = $db->query( 'SELECT institution FROM institutions' );
+		$ret = array();
+		foreach( $result as $row ) {
+			$ret[] = $row['institution'];
+		}
+		return $ret;
 	}
 
 	private static $db = FALSE;

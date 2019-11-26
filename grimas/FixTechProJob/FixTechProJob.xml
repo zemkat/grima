@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Fix Techpro Job</Title>
+	<Field
+		name="job_id"
+		label="Job ID"
+		shortname="j"
+		autocomplete="off"
+		required="yes"
+		placeholder="Job to clean up."
+	/>
+</GrimaForm>

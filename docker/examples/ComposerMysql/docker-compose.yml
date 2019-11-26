@@ -1,0 +1,31 @@
+version: '2'
+networks:
+  cachenet:
+services:
+  grima:
+    image: "zemkat/grima:kubernetes"
+    ports:
+      - "19290:19290"
+    environment:
+      SESSION_MODULE: "redis"
+      SESSION_PATH: "tcp://redis"
+      DATABASE_URL: "mysql:host=mysql;dbname=grima"
+      DATABASE_PASS: "7ad0e257c0d00be2e4fbdc90ae97f7138fba124b42fb153628d58bbccfba3d87"
+      DATABASE_USER: "grima"
+    networks:
+      - cachenet
+  redis:
+    image: "redis:5.0"
+    hostname: "redis"
+    networks:
+      - cachenet
+  mysql:
+    image: "mysql:5.7"
+    hostname: "mysql"
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+      MYSQL_DATABASE: "grima"
+      MYSQL_USER: "grima"
+      MYSQL_PASSWORD: "7ad0e257c0d00be2e4fbdc90ae97f7138fba124b42fb153628d58bbccfba3d87"
+    networks:
+      - cachenet

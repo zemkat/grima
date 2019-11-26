@@ -18,7 +18,8 @@
 	<Field
 		name="institution"
 		label="Institution:"
-        required="yes"
+		required="yes"
+		dataset="institutions"
 	/>
 	<Field
 		name="redirect_url"

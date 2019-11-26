@@ -21,9 +21,6 @@ exclude: [
   "dist/",
   "docker/",
   "docs/samples",
-  "node_modules",
-  "package.json",
-  "package-lock.json",
-  "fix_urls.js",
+  "fix_urls.rb",
   "releases",
 ]

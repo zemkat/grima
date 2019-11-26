@@ -1,0 +1,13 @@
+version: '2'
+services:
+  grima:
+    image: "zemkat/grima:apache"
+    ports:
+      - "19290:19290"
+    environment:
+      apikey: "EDITME"
+      server: "https://api-na.hosted.exlibrisgroup.com"
+      # unused
+      SESSION_MODULE: "files"
+      SESSION_PATH: "/tmp"
+      DATABASE_URL: "sqlite:/dev/null"
