@@ -1,0 +1,20 @@
+<GrimaForm>
+	<Title>Grima: Combine Holdings</Title>
+	<Field
+		name="holding_id"
+		label="Holding to keep"
+		shortname="h"
+		autocomplete="off"
+		required="yes"
+		placeholder="Holding record to retain..."
+	/>
+	<Field
+		name="others"
+		label="Other holdings"
+		shortname="o"
+		autocomplete="off"
+		required="yes"
+		rows="2"
+		placeholder="Holdings IDs one per line, or 'ALL' for all on this bib..."
+	/>
+</GrimaForm>

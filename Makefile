@@ -2,56 +2,76 @@
 ##
 ##  Grima developer tools
 ##
-##  "make doxygen" will translate comments in the code into webpages in
+##  "make run-doxygen" will translate comments in the code into webpages in
 ##  docs/dev
 ##
-##  "make jekyll" will translate documentation in .md (markdown) format
-##  to html in dist/
+##  "make run-jekyll" will translate documentation in .md (markdown) format
+##  to html in releases/built/
 ##
-##  "make tgz" will create a tgz archive of dist/ suitable for releasing on
-##  github.
+##  "make tgz" will create a tgz archive of releases/built/
+##
+##  "make containers" will create all the containers based on releases/built/
 ##
 
-all:	build-dist
+all:	build-docs
 
-build-dist:
-	if command -v bundle >/dev/null && command -v npm >/dev/null && command -v doxygen >/dev/null ; then make build-dist-locally ; else make build-dist-with-docker ; fi
+releases/built: build-docs
 
-build-dist-with-docker:
-	docker run --rm -u $$(id -u):$$(id -g) -v $$(pwd):/work -w /work --name grima-build zemkat/grima-build make build-dist-locally
+build-docs:
+	if command -v ruby > /dev/null && command -v jekyll >/dev/null && command -v doxygen >/dev/null ; then make build-docs-locally ; else make build-docs-with-docker ; fi
 
-build-dist-locally: doxygen jekyll
+build-docs-with-docker:
+	docker run --rm -u $$(id -u):$$(id -g) -v $$(pwd):/work -w /work --name grima-docs-builder zemkat/grima-docs-builder make build-docs-locally
 
-build-docker-apache:
-	rsync -a --delete dist/ docker/dist/
-	rm -f dist/BUGS.* dist/TODO.* dist/grimas-* dist/standalone.sh
-	cd docker && docker build -t zemkat/grima:apache -f ./Dockerfile-apache .
-	cd docker && docker build -t zemkat/grima:kubernetes -f ./Dockerfile-kubernetes .
-	rm -rf docker/dist
+build-docs-locally: run-doxygen run-jekyll
 
-build-docker-builder:
-	cd docker && docker build -t zemkat/grima-build -f ./Dockerfile-build .
+run-doxygen: docs/dev/index.html
 
-jekyll:
-	jekyll b
-	cd dist ; ruby ../fix_urls.rb
-	chmod og+rX -R dist
-	mv dist/index.html dist/README-github.html
-	mv dist/README.md  dist/README-github.md
-	mv dist/README-site.html dist/index.html
-	mv dist/README-site.md   dist/README.md
-
-doxygen: docs/dev/index.html
-
-docs/dev/index.html: grimas/grima-lib.php
+docs/dev/index.html: grimas/grima-lib.php docs/build/Doxyfile
 	rm -rf docs/dev
 	mkdir -p docs/dev
-	doxygen > docs/dev/doxygen.log 2>&1
-	advpng -z -4 $$(find docs/dev -iname '*.png')
+	doxygen docs/build/Doxyfile > docs/dev/doxygen.log 2>&1
+	advpng -z -4 $$(find docs/dev -iname '*.png') || true # optionally compress doxygen images
+
+run-jekyll:
+	mv docs/build/assets docs/build/_layout docs/build/_sass .
+	mv docs/README-*.md .
+	cd docs/build && jekyll b
+	mv assets _layout _sass docs/build/
+	mv README-*.md docs
+	cd releases/built/ && ruby ../../docs/build/fix_urls.rb
+	chmod og+rX -R releases/built/
+	rm -f releases/built/.htaccess
+	mv releases/built/index.html releases/built/README-github.html
+	mv releases/built/README.md  releases/built/README-github.md
+	mv releases/built/README-dist.html releases/built/index.html
+	mv releases/built/README-dist.md releases/built/README.md
 
 tgz:
-	mkdir -p releases
 	TAGNAME=$$(git describe --dirty --tags) ; \
-	mv dist "grima-$$TAGNAME" && \
+	rm -rf releases/built/doc/private ; \
+	mv releases/built "grima-$$TAGNAME" && \
 	tar -zcf "releases/grima-$$TAGNAME.tgz" "grima-$$TAGNAME" && \
-	mv "grima-$$TAGNAME" dist
+	mv "grima-$$TAGNAME" releases/built
+
+TAG=latest
+build-containers: | releases/built
+	mv releases/built containers/cloud/dist
+	docker build -t zemkat/grima-cloud:$(TAG)-amd64 	./containers/cloud
+	docker build -t zemkat/grima-cloud:$(TAG)-arm64v8 	./containers/cloud --build-arg 'phpImg=arm64v8/php:apache'
+	docker build -t zemkat/grima-cloud:$(TAG)-arm32v7 	./containers/cloud --build-arg 'phpImg=arm32v7/php:apache'
+	#docker build -t zemkat/grima-cloud:$(TAG)-arm32v6 	./containers/cloud --build-arg 'phpImg=arm32v6/php:fpm-alpine'
+	mv containers/cloud/dist containers/desktop/
+	docker build -t zemkat/grima-desktop:$(TAG)     	./containers/desktop
+	mv containers/desktop/dist releases/built
+	docker build -t zemkat/grima-docs-builder:$(TAG)       	./containers/docs-builder
+
+push-containers:
+	docker push zemkat/grima-cloud:$(TAG)-amd64
+	docker push zemkat/grima-cloud:$(TAG)-arm64v8
+	docker push zemkat/grima-cloud:$(TAG)-arm32v7
+	#docker push zemkat/grima-cloud:$(TAG)-arm32v6
+	docker manifest create zemkat/grima-cloud:$(TAG) zemkat/grima-cloud:$(TAG)-amd64 zemkat/grima-cloud:$(TAG)-arm64v8 zemkat/grima-cloud:$(TAG)-arm32v7 # zemkat/grima-cloud:$(TAG)-arm32v6
+	docker manifest push --purge zemkat/grima-cloud:$(TAG)
+	docker push zemkat/grima-desktop:$(TAG)
+	docker push zemkat/grima-docs-builder:$(TAG)

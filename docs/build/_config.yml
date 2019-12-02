@@ -1,0 +1,23 @@
+theme: jekyll-theme-dinky
+baseurl: /
+repository: zemkat/grima
+destination: ../../releases/built
+source: ../..
+exclude: [
+  "*.log",
+  "*.phar",
+  "*.sql",
+  "*.swp",
+  "*.tgz",
+  "*.zip",
+  ".bundle",
+  ".htaccess",
+  "Makefile",
+  "broken-toys",
+  "config",
+  "containers",
+  "dist",
+  "docs/build",
+  "docs/samples",
+  "releases",
+]

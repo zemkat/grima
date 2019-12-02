@@ -1,0 +1,46 @@
+<GrimaForm>
+    <Title>Grima: Print Item Record</Title>
+    <Field
+        name="mms_id"
+        label="MMS ID"
+        shortname="m"
+        autocomplete="off"
+        required="yes"
+        placeholder="MMS ID of item to print..."
+    />
+    <Field
+        name="holding_id"
+        label="Holding ID"
+        shortname="h"
+        autocomplete="off"
+        required="yes"
+        placeholder="Holding ID of item to print..."
+    />
+    <Field
+        name="item_pid"
+        label="Item ID"
+        shortname="h"
+        autocomplete="off"
+        required="yes"
+        placeholder="Holding ID of item to print..."
+    />
+    <Field
+        name="view"
+        label="Detail level"
+        type="select"
+        required="yes"
+    >
+      <option value="brief">Brief</option>
+      <option value="label">Label printing</option>
+    </Field>
+    <Field
+        name="expand"
+        label="Due date information"
+        type="select"
+        required="no"
+    >
+      <option value="none">None</option>
+      <option value="due_date_policy">Policy</option>
+      <option value="due_date">Guest's Due Date</option>
+    </Field>
+</GrimaForm>

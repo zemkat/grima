@@ -1,0 +1,43 @@
+version: '2.1'
+
+networks:
+  grima-net:
+
+volumes:
+  grima-users:
+
+services:
+
+  # apache+php+grima
+  grima:
+    image:            "${GRIMA_IMAGE:-zemkat/grima-cloud}"
+    ports:
+      -               "${GRIMA_PORT:-19290}:${APACHE_PORT:-19290}"
+    environment:
+      # default APIKEY (empty, require login)
+      apikey:         ""
+      server:         ""
+      # session storage (per browser APIKEY storage)
+      SESSION_MODULE: "encrypted_cookie"
+      SESSION_NAME:   "${SESSION_NAME:-grima}"
+      SESSION_PATH:   "/tmp"
+      SESSION_KEY:    "${SESSION_KEY:-8pyqFOOCtcmZqiTPvWd7x12NWtUKPrpj5o1oyAI0vr4=}"
+      # user database (login to get a stored APIKEY)
+      DATABASE_URL:   "pgsql:host=grima-users;dbname=${GRIMA_DBNAME:-grima};user=${GRIMA_DBUSER:-grima};password=${GRIMA_DBPASS:-wd0wcWoSQaxKr6gB}"
+      # apache config
+      APACHE_PORT:    "${APACHE_PORT:-19290}"
+    networks:
+      - grima-net
+
+  # user database
+  grima-users:
+    image:            "postgres:12"
+    hostname:         "grima-users"
+    environment:
+      POSTGRES_DB:        "${GRIMA_DBNAME:-grima}"
+      POSTGRES_USER:      "${GRIMA_DBUSER:-grima}"
+      POSTGRES_PASSWORD:  "${GRIMA_DBPASS:-wd0wcWoSQaxKr6gB}"
+    networks:
+      -                   grima-net
+    volumes:
+      -                   "grima-users:/var/lib/postgresql/data"

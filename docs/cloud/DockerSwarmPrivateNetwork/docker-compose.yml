@@ -1,0 +1,38 @@
+version: '3.1'
+
+secrets:
+  apikey:
+    file:               "./apikey.txt"
+  server:
+    file:               "./server.txt"
+  SESSION_KEY:
+    file:               "./SESSION_KEY.txt"
+
+services:
+
+  # apache+php+grima
+  grima:
+    image:              "${GRIMA_IMAGE:-zemkat/grima-cloud}"
+    ports:
+      -                 "${GRIMA_PORT:-19290}:${APACHE_PORT:-19290}"
+    environment:
+      # default APIKEY (none, require login)
+      apikey:           ""
+      server:           ""
+      apikey_file:      "/run/secrets/apikey"
+      server_file:      "/run/secrets/server"
+      # session storage (per browser APIKEY)
+      SESSION_MODULE:   "${SESSION_MODULE:-encrypted_cookie}"
+      SESSION_NAME:     "${SESSION_NAME:-grima}"
+      SESSION_PATH:     "${SESSION_PATH:-/tmp}"
+      SESSION_KEY_FILE: "/run/secrets/SESSION_KEY"
+      # user database (force anonymous login via apikey)
+      DATABASE_URL:     "${DATABASE_URL:-anonymous}"
+      DATABASE_USER:    ""
+      DATABASE_PASS:    ""
+      # apache config
+      APACHE_PORT:      "${APACHE_PORT:-19290}"
+    secrets:
+      - apikey
+      - server
+      - SESSION_KEY

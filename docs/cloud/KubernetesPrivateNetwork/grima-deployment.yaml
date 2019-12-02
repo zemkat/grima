@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grima
+spec:
+  selector:
+    matchLabels:
+      app: grima
+      role: independent
+      tier: backend
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: grima
+        role: independent
+        tier: backend
+    spec:
+      containers:
+        - name: grima
+          image: zemkat/grima-cloud
+          ports:
+          - containerPort: 19290
+          resources:
+            requests:
+              cpu: 60m
+              memory: 256Mi
+          imagePullPolicy: Always
+          env:
+          - name: apikey
+            value: EDITME
+          - name: server
+            value: https://api-na.hosted.exlibrisgroup.com
+          # unused
+          - name: DATABASE_URL
+            value: sqlite:/dev/null
+          - name: SESSION_MODULE
+            value: files
+          - name: SESSION_PATH
+            value: /tmp
+      restartPolicy: Always

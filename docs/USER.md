@@ -15,6 +15,8 @@ be very powerful and speed up your work!
 * [RemoveTempLocation](../grimas/RemoveTempLocation/RemoveTempLocation.md) -- remove temporary location from item
 * [MarkImportTemporaryLocation](../grimas/MarkImportTemporaryLocation/MarkImportTemporaryLocation.md) -- mark items from an import job as being in a temporary location
 * [AppendToNoteOnSet](../grimas/AppendToNoteOnSet/AppendToNoteOnSet.md) -- add a note to every item in a set, appending if there is already a note there
+* [PortfolioNoteFrom856](../grimas/PortfolioNoteFrom856/PortfolioNoteFrom856.md) -- create a table of contents note from 856 links in the bib
+* [PortfolioUpdateUrl](../grimas/PortfolioUpdateUrl/PortfolioUpdateUrl.md) -- update the main URL field in a portfolio
 
 ### Add New Records
 * [CreateBriefBib](../grimas/CreateBriefBib/CreateBriefBib.md) -- create a brief bib with specified 245a
@@ -26,6 +28,7 @@ be very powerful and speed up your work!
 * [DeleteBib](../grimas/DeleteBib/DeleteBib.md) -- delete bib from Alma
 * [DeleteItem](../grimas/DeleteItem/DeleteItem.md) -- delete item from Alma
 * [DeletePortfolio](../grimas/DeletePortfolio/DeletePortfolio.md) -- delete portfolio from Alma
+* [Recycle](../grimas/Recycle/Recycle.md) -- delete hard-to-delete records
 
 ### View XML for Development or Debugging
 * [ViewXmlBib](../grimas/ViewXmlBib/ViewXmlBib.md) -- view Bib record as Bib object XML

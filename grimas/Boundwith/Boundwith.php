@@ -20,7 +20,7 @@ class Boundwith extends GrimaTask {
 		foreach ($this->biblist as $k => $bib) {
 			$title = $bib->get_title_proper();
 			if ($k > 0) {
-				$this->biblist[0]->appendField("774","1"," ",array(
+				$this->biblist[0]->addDataField("774","1 ",array(
 					't' => $title,
 					'w' => $bib['mms_id']
 					)
@@ -40,7 +40,7 @@ class Boundwith extends GrimaTask {
 				}
 			}
 			$my501text = preg_replace("/; $/",".",$my501text);
-			$bib->appendField("501"," "," ",array('a' => $my501text));
+			$bib->addDataField("501","  ",array('a' => $my501text));
 			$bib->updateAlma();
 		}
 
@@ -50,7 +50,7 @@ class Boundwith extends GrimaTask {
 
 		foreach ($this->biblist as $k => $bib) {
 			if ($k > 0) {
-				$mfhd->appendField("014","1"," ",array('a' => $bib['mms_id']));
+				$mfhd->addDataField("014","1 ",array('a' => $bib['mms_id']));
 			}
 		}
 		$mfhd->updateAlma();

@@ -8,14 +8,9 @@ class AdminAddInstitution extends GrimaTask {
 
 	function setup_splat() {
 		parent::setup_splat();
-		global $firstRun;
-		if ($firstRun) {
+		if (GrimaDb::isEmpty()) {
 			if (!isset($this['username'])) {
 				$this->AddMessage('success',"Welcome to Grima! You'll need to configure an API-key before grima has enough power to whisper into Alma's ear.");
-			} else if (isset($this['redirect_url'])) {
-				$this->splatVars['redirect_url'] = $this['redirect_url'];
-			} else {
-				$this->splatVars['redirect_url'] = "../PrintBib/PrintBib.php";
 			}
 		}
 	}
@@ -36,7 +31,8 @@ class AdminAddInstitution extends GrimaTask {
 			$inst->addToDB();
 			$this->addMessage('success',"Institution '{$inst['institution']}' successfully added.");
 		} catch(Exception $e) {
-			$this->addMessage('danger',"Failed to add institution {$inst['institution']}");
+			$msg = $e->getMessage();
+			$this->addMessage('error',"Failed to add institution {$inst['institution']}: $msg");
 			return;
 		}
 		$newAdmin = new GrimaUser();
@@ -48,6 +44,7 @@ class AdminAddInstitution extends GrimaTask {
 		$this->addMessage('success',"User '{$newAdmin['username']}' successfully added as admin of '{$inst['institution']}'.");
 		GrimaUser::SetCurrentUser($newAdmin['username'],$newAdmin['password'],$newAdmin['institution']);
 		$this->addMessage('success',"You are now logged in as '{$newAdmin['username']}'");
+		$this->splatVars['body'] = array( 'form', 'continueon' );
 	}
 
 	function check_login() {

@@ -1,0 +1,25 @@
+<GrimaForm>
+	<Title>Grima: Public Login</Title>
+	<Field
+		name="apikey"
+		label="Alma API key:"
+		required="yes"
+	/>
+        <Field
+                name="server"
+                label="Alma Server:"
+                type="select"
+                required="yes"
+        >
+                <option value="https://api-na.hosted.exlibrisgroup.com">America - https://api-na.hosted.exlibrisgroup.com</option>
+                <option value="https://api-eu.hosted.exlibrisgroup.com">Europe - https://api-eu.hosted.exlibrisgroup.com</option>
+                <option value="https://api-ap.hosted.exlibrisgroup.com">Asia Pacific - https://api-ap.hosted.exlibrisgroup.com</option>
+                <option value="https://api-ca.hosted.exlibrisgroup.com">Canada - https://api-ca.hosted.exlibrisgroup.com</option>
+                <option value="https://api-cn.hosted.exlibrisgroup.com">China - https://api-cn.hosted.exlibrisgroup.com</option>
+        </Field>
+	<Field
+		name="redirect_url"
+		type="hidden"
+		required="no"
+	/>
+</GrimaForm>

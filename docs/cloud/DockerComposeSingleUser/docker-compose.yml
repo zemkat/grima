@@ -1,0 +1,23 @@
+version: '2.1'
+
+services:
+
+  # apache+php+grima
+  grima:
+    image:            "${GRIMA_IMAGE:-zemkat/grima-cloud}"
+    ports:
+      -               "${GRIMA_PORT:-19290}:${APACHE_PORT:-19290}"
+    environment:
+      # default APIKEY (you must change EDITME in this file)
+      apikey:         "${GRIMA_APIKEY:-EDITME}"
+      server:         "${GRIMA_SERVER:-https://api-na.hosted.exlibrisgroup.com}"
+      # session storage (should be unused)
+      SESSION_MODULE: "files"
+      SESSION_NAME:   "${SESSION_NAME:-grima}"
+      SESSION_PATH:   "/tmp"
+      # user database (should be unused)
+      DATABASE_URL:   "sqlite:/tmp/grima.sql"
+      DATABASE_USER:  ""
+      DATABASE_PASS:  ""
+      # apache config
+      APACHE_PORT:    "${APACHE_PORT:-19290}"

@@ -2,6 +2,10 @@
   min-height: 100vh;
 }
 
+body > .jumbotron {
+  margin-bottom: 0ex;
+}
+
 .has-error input {
   background-color : #ffe4e1;
 }

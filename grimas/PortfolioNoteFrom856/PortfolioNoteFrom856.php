@@ -38,7 +38,8 @@ class PortfolioNoteFrom856 extends GrimaTask {
 		$note .= "</ul>";
 
 		$port = new ElectronicPortfolio();
-		if (isset($this['portfolio_id'])) {
+		if ((isset($this['portfolio_id'])) and 
+				(rtrim($this['portfolio_id']) != '')) {
 			$port->loadFromAlma($this['portfolio_id']);
 		} else {
 			if ($ports = $bib->getPortfolios()) {
@@ -53,7 +54,7 @@ class PortfolioNoteFrom856 extends GrimaTask {
 		}
 		$port['public_note'] = $note;
 		$port->updateAlma();
-		$this->addMessage('success', "updated note on {$port['portfolio_id']}");
+		$this->addMessage('success', "updated note on {$port['portfolio_id']}:<br />$note");
 	}
 }
 

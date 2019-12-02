@@ -8,7 +8,6 @@ class KtcStorageChain extends GrimaTask {
 		$bib = new Bib();
 		$bib->loadFromAlma($this['mms_id']);
 
-
 		$callno = $bib->getLCCallNumber();
 
 		$holding = new Holding();
@@ -30,12 +29,10 @@ class KtcStorageChain extends GrimaTask {
 		$this->addMessage('success',"Added tree: ${this['mms_id']} " . $bib->get_title_proper());
 	}
 
-        function print_success() {
-			sleep(2);
-            do_redirect('../Hierarchy/Hierarchy.php?mms_id=' . $this['mms_id']);
-        }
-
-
+	function print_success() {
+		sleep(2); # wait for Alma to finish its work before displaying Hierarchy
+		GrimaTask::call('Hierarchy', array( 'mms_id' => $this['mms_id']) );
+	}
 }
 
 KtcStorageChain::RunIt();

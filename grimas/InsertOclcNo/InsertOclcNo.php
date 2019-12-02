@@ -12,7 +12,7 @@ class InsertOclcNo extends GrimaTask {
 		$bib->deleteField("035");
 
 		$new_oclcnum = "(OCoLC)" . $this['oclcnum'];
-		$bib->appendField("035","","",array('a' => $new_oclcnum));
+		$bib->addDataField("035","  ",array('a' => $new_oclcnum));
 		$bib->updateAlma();
 
 	}

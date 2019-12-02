@@ -19,28 +19,44 @@ class Grima {
 // {{{ session management
 
 	function session_init( $force = false ) {
-		if( !isset($_SESSION) ) {
-			$session_name = 'grima';
-			if (getenv('SESSION_MODULE')) {
-				session_module_name(getenv('SESSION_MODULE'));
-			}
-			if (getenv('SESSION_PATH')) {
-				session_save_path(getenv('SESSION_PATH'));
-			} else {
-				$session_dir = join_paths( sys_get_temp_dir(), 'grima' );
-				@mkdir($session_dir, 0777, true);
-				session_save_path($session_dir);
-			}
-			session_name( $session_name );
-			session_set_cookie_params(365*24*60*60); # one year
-			ini_set('session.gc_maxlifetime',525600*60); # of love
-			if( $force || isset($_COOKIE[$session_name]) ) {
+		# Session Module
+		$session_module_name = getenv('SESSION_MODULE') ?: "encrypted_cookie";
+		if ($session_module_name=="none") {
+			return;
+		} else if ($session_module_name=="encrypted_cookie") {
+			$session_key = base64_decode(
+				getenv('SESSION_KEY')?:
+				@file_get_contents(getenv('SESSION_KEY_FILE'))?:
+				"base64EncodedGrimaKeyOf32BytesTotallyRandom="
+			);
+			session_set_save_handler(new EncryptedCookieSession($session_key));
+			ini_set("session.use_cookies",false);
+		} else if ($session_module_name) {
+			$new_name = session_module_name($session_module_name);
+			if ($new_name != $session_module_name) {
+				session_name( "grima_failsafe" );
 				session_start();
+				return;
 			}
 		}
+		# Session Name
+		$session_name = getenv('SESSION_NAME') ?: 'grima';
+		session_name( $session_name );
+		# Session Path
+		$session_path = getenv('SESSION_PATH') ?: join_paths( sys_get_temp_dir(), 'grima' );
+		if (session_module_name()==='files') {
+			@mkdir($session_path, 0700, true);
+		}
+		session_save_path($session_path);
+		# Session lifetime
+		session_set_cookie_params(365*24*60*60); # one year
+		ini_set('session.gc_maxlifetime',525600*60); # of love
+		# Start session
+		session_start();
 	}
 
 	function session_save($result) {
+		if (getenv('SESSION_MODULE')=="none") return;
 		$this->session_init(true);
 		foreach( $result as $key => $value ) {
 			$_SESSION[$key] = $value;
@@ -49,74 +65,56 @@ class Grima {
 	}
 
 	function session_destroy() {
-		$this->session_init(true);
-		session_start();
-		if (ini_get("session.use_cookies")) {
+		if (getenv('SESSION_MODULE')=="none") return;
+		$_SESSION = [];
+		if ( ini_get("session.use_cookies") ) {
 			$params = session_get_cookie_params();
-			setcookie(session_name(), '', time() - 42000,
-				$params["path"], $params["domain"],
-				$params["secure"], $params["httponly"]
-			);
+			$params['expires'] = time() - 42000;
+			unset($params['lifetime']);
+			setcookie(session_name(), '', $params );
 		}
+		$this->session_init(true);
+		$_SESSION = [];
 		session_destroy();
-		$_SESSION=array();
 	}
 
 // }}}
 
 // {{{ config
 	function __construct() {
-		$this->get_config();
-	}
-
-	function get_config() {
-		# Precedence:
-		# $_REQUEST, $_SESSION, $_SERVER, $_ENV, grima-config.php
-
-		if (isset($_REQUEST['apikey']) and isset($_REQUEST['server']) and
-			($_REQUEST['apikey']) and ($_REQUEST['server'])
-		) {
-			$this->session_save( array(
-				'apikey' => $_REQUEST['apikey'],
-				'server' => $_REQUEST['server']
-			) );
-			$this->apikey = $_REQUEST['apikey'];
-			$this->server = $_REQUEST['server'];
-			return true;
-		}
 
 		$this->session_init();
-		if ( isset($_SESSION) ) {
-			session_write_close();
-			if(
-				isset($_SESSION['apikey']) and
-				isset($_SESSION['server']) and
-				($_SESSION['apikey']) and
-				($_SESSION['server'])
-			) {
-				$this->apikey = $_SESSION['apikey'];
-				$this->server = $_SESSION['server'];
-				return true;
-			}
+
+		$this->apikey =
+			isset($_REQUEST['apikey']) && $_REQUEST['apikey'] ? $_REQUEST['apikey'] : (
+			isset($_SESSION['apikey']) && $_SESSION['apikey'] ? $_SESSION['apikey'] : (
+			getenv('apikey') ?: rtrim(@file_get_contents( getenv('apikey_file') )) ?: ""
+			) );
+
+		$this->server =
+			isset($_REQUEST['server']) && $_REQUEST['server'] ? $_REQUEST['server'] : (
+			isset($_SESSION['server']) && $_SESSION['server'] ? $_SESSION['server'] : (
+			getenv('server') ?: rtrim(@file_get_contents( getenv('server_file') )) ?: ""
+			) );
+
+		if (strlen($this->server)==2) {
+			$this->server = "https://api-" . $this->server . ".hosted.exlibrisgroup.com";
 		}
 
-		if ( isset($_SERVER['apikey']) and isset($_SERVER['server']) and
-				($_SERVER['apikey']) and ($_SERVER['server'])) {
-			$this->apikey = $_SERVER['apikey'];
-			$this->server = $_SERVER['server'];
-			return true;
+		if (!preg_match('!https://api-[a-z]*\.hosted\.exlibrisgroup\.com!',$this->server)) {
+			$this->server = "";
 		}
 
-		if ( getenv('apikey') and getenv('server') ) {
-			$this->apikey = getenv('apikey');
-			$this->server = getenv('server');
-			return true;
+		if ($this->apikey=='EDITME') {
+			$this->apikey = "";
 		}
 
-		if( file_exists("grima-config.php") ) {
-			require('grima-config.php'); # this should set those
-			return true;
+		if ($this->apikey && $this->server) {
+			$_SESSION['apikey'] = $this->apikey;
+			$_SESSION['server'] = $this->server;
 		}
+
+		session_write_close();
 
 		return false;
 	}
@@ -170,7 +168,17 @@ class Grima {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
 		curl_setopt($ch, CURLOPT_HEADER, FALSE);
-		curl_setopt($ch, CURLOPT_SSL_CIPHER_LIST, 'DEFAULT@SECLEVEL=1');
+
+		# ExLibris / Debian interoperability problem
+		# https://github.com/openssl/openssl/issues/7126
+		# error_log("OPENSSL_VERSION_NUMBER=" .dechex(OPENSSL_VERSION_NUMBER));
+		#							  0x01000214f on reclaim
+		if (OPENSSL_VERSION_NUMBER >= 0x010101000) {
+			// debian 10 workaround until Ex Libris patches their servers
+			curl_setopt($ch, CURLOPT_SSL_CIPHER_LIST, "DEFAULT@SECLEVEL=1");
+		}
+
+
 		if (isset($bodyxml)) {
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyxml);
 		}
@@ -783,7 +791,7 @@ class Grima {
  * Makes a call to the API:
  * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/bibs#Resources)
  *
- *		PUT /almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}	 
+ *		PUT /almaws/v1/bibs/{mms_id}/portfolios/{portfolio_id}
  *
  * @param string $mms_id ID of bibliographic record
  * @param string $portfolio_id ID of portfolio
@@ -900,7 +908,7 @@ class Grima {
  * Makes a call to the API:
  * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/electronic/#Resources)
  *
- * PUT /almaws/v1/electronic/e-collections/{collection_id}	 
+ * PUT /almaws/v1/electronic/e-collections/{collection_id}
  *
  * @param string $collection_id Alma ElectronicCollection record to update
  * @param DomDocument $collection ElectronicCollection to replace old record
@@ -947,7 +955,7 @@ class Grima {
 /**@name Library APIs */
 /**@{*/
 
-// {{{ getLibrary (Retrieve a Library)
+// {{{ grima -> getLibrary (Retrieve a Library)
 /**
  * @brief Retrieve a Library - retrieve a Library from Alma
  *
@@ -961,6 +969,48 @@ class Grima {
 */
 	function getLibrary($libraryCode) {
 		$ret = $this->get('/almaws/v1/conf/libraries/{libraryCode}',
+			array('libraryCode' => $libraryCode),
+			array()
+		);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
+// {{{ grima -> getAllLibraries (Retrieve Libraries)
+/**
+ * @brief Retrieve Libraries - retrieve all libraries
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/conf#Resources)
+ *
+ *		GET /almaws/v1/conf/libraries
+ *
+ * @return DomDocument Libraries object
+*/
+	function getAllLibraries() {
+		$ret = $this->get('/almaws/v1/conf/libraries',
+			array(),
+			array()
+		);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
+// {{{ getAllLocations (Retrieve Locations)
+/**
+ * @brief Retrieve Locations - retrieve all locations in a library
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/conf#Resources)
+ *
+ *		GET /almaws/v1/conf/libraries/{libraryCode}/locations
+ *
+ * @return DomDocument Locations object
+*/
+	function getAllLocations($libraryCode) {
+		$ret = $this->get('/almaws/v1/conf/libraries/{libraryCode}/locations',
 			array('libraryCode' => $libraryCode),
 			array()
 		);
@@ -1008,7 +1058,7 @@ class Grima {
 /**@name Set APIs */
 /**@{*/
 
-// {{{ Set -> getSet (Retrieve a Set)
+// {{{ grima -> getSet (Retrieve a Set)
 /**
  * @brief Retrieve a Set - retrieve a Set from Alma
  *
@@ -1030,7 +1080,29 @@ class Grima {
 	}
 // }}}
 
-// {{{ Set -> postSetManageMembers (Manage Members)
+// {{{ grima -> postSet (Create a Set)
+/**
+ * @brief Create a Set - add a new set to Alma
+ *
+ * Makes a call to the API:
+ * [(API docs)](https://developers.exlibrisgroup.com/alma/apis/conf#Resources)
+ *
+ *		POST /almaws/v1/conf/sets
+ *
+ * @return DomDocument Set object
+*/
+	function postSet($set) {
+		$ret = $this->post('/almaws/v1/conf/sets/',
+			array(),
+			array(),
+			$set
+		);
+		$this->checkForErrorMessage($ret);
+		return $ret;
+	}
+// }}}
+
+// {{{ grima -> postSetManageMembers (Manage Members)
 /**
  * @brief Manage Members - modify sets in Alma
  *
@@ -1049,7 +1121,7 @@ class Grima {
 		$ret = $this->post('/almaws/v1/conf/sets/{set_id}',
 			array('set_id' => $set_id),
 			array('id_type' => $id_type, 'op' => $op),
-			$set,
+			$set
 			);
 		$this->checkForErrorMessage($ret);
 		return $ret;
@@ -1194,7 +1266,7 @@ class Grima {
 		$ret = $this->post('/almaws/v1/conf/jobs/{job_id}',
 			array('job_id' => $job_id),
 			array('op' => $op),
-			$job,
+			$job
 			);
 		$this->checkForErrorMessage($ret);
 		return $ret;
@@ -1206,8 +1278,6 @@ class Grima {
 
 
 }
-
-$grima = new Grima();
 
 // }}}
 
@@ -1299,7 +1369,7 @@ abstract class GrimaTask implements ArrayAccess {
 			($grima->apikey) and ($grima->server)) {
 			return true;
 		} else {
-			do_redirect('../Login/Login.php?redirect_url=' . urlencode($_SERVER['PHP_SELF']));
+			GrimaTask::call('Login',array("redirect_url"=>$_SERVER['PHP_SELF']));
 			exit;
 			return false;
 		}
@@ -1504,8 +1574,6 @@ class GrimaForm {
 	}
 // }}}
 
-
-
 // {{{ fromXML
 /**
  * @brief interpret XML to determine form fields and behavior
@@ -1523,6 +1591,169 @@ class GrimaForm {
 			$this->fields[$node->getAttribute('name')] = new GrimaFormField($node);
 		}
 	}
+// }}}
+
+}
+
+// }}}
+
+//{{{ class GrimaDataStore
+
+$ds_barcode = 'GRIMABYZEMKAT';
+
+/** @class GrimaDataStore
+ ** @brief This object lets grima store data in a catalog record
+ */
+class GrimaDataStore implements ArrayAccess {
+
+	public $marc;
+	public $bib;
+	public $holding;
+	public $item;
+
+// {{{ __construction
+/**
+ * @brief make sure it exists
+ *
+ */
+	function __construct() {
+		global $ds_barcode;
+		$this->item = new Item();
+		try {
+			$this->item->loadFromAlmaBarcode($ds_barcode);
+		} catch (Exception $e) {
+			$this->setup();
+		}
+		$this->bib = new Bib();
+		$this->bib->loadFromAlma($this->item['mms_id']);
+		$this->bib->useNormac();
+	}
+// }}}
+
+// {{{ array access functions
+	function offsetExists($offset) {
+		$fields = $this->bib->marc->getFields('ZEM');
+		foreach($fields as $field) {
+			$keys = $field->getSubfields('k');
+			if ($keys[0]->data == $offset) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function offsetGet($offset) {
+		$fields = $this->bib->marc->getFields('ZEM');
+		foreach($fields as $field) {
+			$keys = $field->getSubfields('k');
+			if ($keys[0]->data == $offset) {
+				$values = $field->getSubfields('v');
+				return $values[0]->data;
+			}
+		}
+		return false;
+	}
+
+	function offsetSet($offset,$value) {
+		$fields = $this->bib->marc->getFields('ZEM');
+		foreach($fields as $field) {
+			$keys = $field->getSubfields('k');
+			if ($keys[0]->data == $offset) {
+				$values = $field->getSubfields('v');
+				$values[0]->data = $value;
+				$this->bib->updateAlma();
+				return true;
+			}
+		}
+		$subarray = array(
+			new ISO2709Subfield('k',$offset),
+			new ISO2709Subfield('v',$value),
+		);
+		$field = new ISO2709Field('ZEM',null,"	",$subarray);
+		$this->bib->marc->appendField($field);
+		$this->bib->updateAlma();
+		return false;
+	}
+
+	function offsetUnset($offset) {
+		$fields = $this->bib->marc->getFields('ZEM');
+		foreach($fields as $field) {
+			$keys = $field->getSubfields('k');
+			if ($keys[0]->data == $offset) {
+				$field->delete();
+				$this->bib->updateAlma();
+				return true;
+			}
+		}
+		return false;
+	}
+// }}}
+
+// {{{ setup
+/**
+ * @brief create the record structure in Alma
+ *
+ */
+	function setup() {
+		global $ds_barcode;
+		$bib = new Bib();
+		$bib['title'] = "GRIMA'S DATA STORE"; # XXX indicators 00?
+		$bib['suppress_from_publishing'] = "true";
+		$bib->addToAlma();
+		$this->bib = $bib;
+		$this->bib->useNormac();
+
+		$library = Library::getOneLibrary();
+		$location = $library->getOneLocation();
+
+		$holding = new Holding();
+		$holding['library_code'] = $library['code'];
+		$holding['location_code'] = $location['code'];
+		$holding->addToAlmaBib($bib['mms_id']);
+		$this->holding = $holding;
+
+		$item = new Item();
+		$item['barcode'] = $ds_barcode;
+		$item->addToAlmaHolding($bib['mms_id'],$holding['holding_id']);
+		$this->item = $item;
+
+		preg_match('/\d{5}$/',$bib['mms_id'],$m);
+		$this['alma institution code'] = $m[0];
+	}
+// }}}
+
+// {{{ exists
+/**
+ * @brief checks whether a grima data store has been set up in Alma
+ *
+ */
+	public static function exists() {
+		global $ds_barcode;
+		$item = new Item();
+		try {
+			$item->loadFromAlmaBarcode($ds_barcode);
+			return true;
+		} catch (Exception $e) {
+			return false;
+		}
+	}
+
+// }}}
+
+// {{{ destroy
+/**
+ * @brief remove the grima data store from Alma
+ *
+ */
+	public function destroy() {
+		global $ds_barcode;
+		$item = new Item();
+		$item->loadFromAlmaBarcode($ds_barcode);
+		$bib = new Bib();
+		$bib->loadFromAlma($item['mms_id']);
+		$bib->deleteTreeFromAlma();
+	}
+
 // }}}
 
 }
@@ -1656,12 +1887,13 @@ class AlmaObject implements ArrayAccess {
 		}
 		$xpath = new DomXpath($this->xml);
 		$node = $xpath->query($this->el_address[$offset]);
-		if (count($node) >= 1) {
+		if (sizeof($node) >= 1) {
 			return $node[0]->nodeValue;
 		}
 		return null;
 	}
 
+	# XXX el_override ?
 	function offsetSet($offset, $value) {
 		$xpath = new DomXpath($this->xml);
 		$node = $xpath->query($this->el_address[$offset]);
@@ -1692,29 +1924,48 @@ class AlmaObjectWithMARC extends AlmaObject {
 		$this->marc->loadFromString($this->xml->saveXML());
 	}
 
-// {{{ AlmaObjectWithMARC -> appendFieldN
+// {{{ AlmaObjectWithMARC -> addControlField
 /**
- * @brief add a field to the MARC record using Normac
+ * @brief add a data field to the MARC record using Normac
+ *
+ * @param string $tag a three character MARC tag
+ * @param string $data control field data
+ */
+	function addControlField($tag,$data) {
+		$this->useNormac();	# this function uses normac
+		$subarray = array();
+		$field = new ISO2709Field($tag, data);
+		$this->marc->AppendField($field,true);
+	}
+// }}}
+
+// {{{ AlmaObjectWithMARC -> addDataField
+/**
+ * @brief add a data field to the MARC record using Normac
  *
  * @param string $tag a three character MARC tag
  * @param string $indicators both indicators in one string
  * @param Array $subfields each entry of the form $code => $value
  */
-	function appendFieldN($tag,$indicators,$subfields) {
+	function addDataField($tag,$indicators,$subfields) {
 		$this->useNormac();	# this function uses normac
 		$subarray = array();
 		foreach ($subfields as $k => $v) {
 			$subarray[] = new ISO2709Subfield($k,$v);
 		}
 		$field = new ISO2709Field($tag, null, $indicators, $subarray);
-		$this->marc->AppendField($field);
+		$this->marc->AppendField($field,true);
 	}
+// }}}
 
+// {{{ AlmaObjectWithMARC -> normacToXML
+/**
+ * @brief convert normac fields back to XML
+ */
 	function normacToXML() {
 		if (isset($this->marc)) {
 			$newRecord = new DOMDocument;
 			$newRecord->loadXML($this->marc->asXMLString());
-			#error_log($this->marc->asXMLString());
 
 			$xpath = new DOMXpath($this->xml);
 			$record = $xpath->query('//record');
@@ -1749,7 +2000,7 @@ class AlmaObjectWithMARC extends AlmaObject {
 	}
 // }}}
 
-// {{{ AlmaObjectWithMARC -> getFields 
+// {{{ AlmaObjectWithMARC -> getFields
 /**
  * @brief get fields for the given MARC tag
  *
@@ -1904,7 +2155,8 @@ class Bib extends AlmaObjectWithMARC {
 		'author' => '//author',
 		'place_of_publication' => '//place_of_publication',
 		'publisher_const' => '//publisher_const',
-		'publisher' => '//publisher_const'
+		'publisher' => '//publisher_const',
+		'suppress_from_publishing' => '//suppress_from_publishing',
 	);
 
 	function offsetGet($offset) {
@@ -2375,26 +2627,27 @@ class Holding extends AlmaObjectWithMARC {
 
 // {{{ getMmsFromHoldingID (get) - gets the MMS for a holding ID
 /**
- * @brief populates the MMS ID 
+ * @brief populates the MMS ID
  *
 */
 	public static function getMmsFromHoldingID($holding_id) {
 		global $grima;
 
 		$report = new AnalyticsReport();
-		$report->path = "/shared/UK Libraries- University of Kentucky (UKY)/Reports/Kathryn/HoldingToMMS";
+		# $report->path = "/shared/UK Libraries- University of Kentucky (UKY)/Reports/Kathryn/HoldingToMMS";
+		$report->path = "/shared/Community/Reports/Institutions/University of Kentucky/Kathryn/HoldingToMMS";
 		$report->filter = '
-<sawx:expr xsi:type="sawx:comparison" op="equal" xmlns:saw="com.siebel.analytics.web/report/v1.1" 
-xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<sawx:expr xsi:type="sawx:comparison" op="equal" xmlns:saw="com.siebel.analytics.web/report/v1.1"
+xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <sawx:expr xsi:type="sawx:sqlExpression">"Holding Details"."Holding Id"</sawx:expr><sawx:expr xsi:type="xsd:string">{holding_id}</sawx:expr>
 </sawx:expr>';
-	
+
 		$report->runReport(array('holding_id' => $holding_id), 1);
 		if (count($report->rows) == 1) {
 			return $report->rows[0][1];
 		} else {
-			return null;
+			throw new Exception("No MMS for Holding ID $holding_id");
 		}
 	}
 // }}}
@@ -2452,7 +2705,6 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	}
 // }}}
 
-
 // {{{ updateAlma (put) - update record in Alma
 /**
  * @brief update holding record in Alma
@@ -2481,7 +2733,7 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
 		$bib = new Bib();
 		$bib->loadFromAlma(); # link?
-		
+
 		switch($this["shelving_scheme"]) {
 			case '0': # Library of Congress
 				$fields = $bib->getFields("090");
@@ -2607,7 +2859,7 @@ class Item extends AlmaObject {
 		'location' => '//location/@desc',
 		'location_code' => '//location',
 		'library' => '//location/@desc',
-		'library_code' => '//location',
+		'library_code' => '//library',
 		'policy' => '//policy',
 		'item_policy' => '//policy',
 		'provenance' => '//provenance',
@@ -2638,6 +2890,7 @@ class Item extends AlmaObject {
 		'mms_id' => '//mms_id',
 		'holding_id' => '//holding_id',
 		'title' => '//title',
+		'author' => '//author',
 		'call_number' => '//call_number',
 		'pages' => '//pages',
 		'pieces' => '//pieces',
@@ -2721,7 +2974,7 @@ class Item extends AlmaObject {
 	}
 // }}}
 
-// {{{ Item -> addToAlmaHolding (post)
+// {{{ addToAlmaHolding (post)
 /**
  * @brief add new item record to holding in Alma
  * @param string $mms_id MMS ID of bib record
@@ -2737,12 +2990,13 @@ class Item extends AlmaObject {
 	}
 // }}}
 
-// {{{ Item -> addToAlmaHoldingX (post)
+// {{{ addToAlmaHoldingX (post)
 /**
  * @brief add new item record to holding in Alma
  * @param string $holding_id Holding ID of holding record to add item to
  * @return DomDocument item object as it now appears in Alma
  */
+	# XXX check this
 	function addToAlmaHoldingX($holding_id) {
 		$this->addToAlmaHolding('X',$holding_id);
 		return $this->xml;
@@ -3053,7 +3307,7 @@ class ElectronicPortfolio extends AlmaObject {
 	}
 // }}}
 
-// {{{ ElectronicPortfolio -> updateAlma 
+// {{{ ElectronicPortfolio -> updateAlma
 /**
  * @brief replaces the Portfolio in Alma
  */
@@ -3114,8 +3368,42 @@ class Set extends AlmaObject {
 	public $el_address = array(
 		'set_id' => '//set/id',
 		'id' => '//set/id',
+		'name' => '//set/name',
+		'description' => '//set/description',
+		'type' => '//set/type',
 		'content' => '//content',
+		'private' => '//private',
+		'status' => '//status',
+		'status_date' => '//status_date',
+		'note' => '//note',
+		'created_by' => '//created_by',
+		'created_date' => '//created_date',
+		'query' => '//query',
+		'number_of_members' => '//number_of_members',
+		'additional_info' => '//additional_info',
 	);
+// }}}
+
+// {{{ Set -> addToAlma (post) - adds the Set to Alma
+/**
+ * @brief adds Set to Alma, updates object with current Alma version
+ */
+	function addToAlma() {
+		global $grima;
+		$this->xml = $grima->postSet($this->xml);
+	}
+// }}}
+
+// {{{ Set -> loadFromAlma
+/**
+ * @brief populate set with info from Alma
+ *
+ * @param string $set_id - id of set to pull from Alma
+ */
+	function loadFromAlma($set_id) {
+		global $grima;
+		$this->xml = $grima->getSet($set_id);
+	}
 // }}}
 
 // {{{ Set -> createFromImport
@@ -3131,18 +3419,6 @@ class Set extends AlmaObject {
 	}
 // }}}
 
-// {{{ Set -> loadFromAlma
-/**
- * @brief populate set with info from Alma
- *
- * @param Int $set_id - id of set to pull from Alma
- */
-	function loadFromAlma($set_id) {
-		global $grima;
-		$this->xml = $grima->getSet($set_id);
-	}
-// }}}
-
 // {{{ Set -> runOnElements
 /**
  * @brief run a function on every element in the set
@@ -3151,7 +3427,7 @@ class Set extends AlmaObject {
  * @param array $args list of arguments to pass to function in addition to element
  * @param string $filter run function on only elements where filter function returns true
  */
-	function runOnElements($function, $args = array(), $filter = null, $filter_args = array()) { 
+	function runOnElements($function, $args = array(), $filter = null, $filter_args = array()) {
 		global $grima;
 		$xml = $grima->getSetMembers($this['set_id'],0);
 		$xpath = new DomXpath($xml);
@@ -3162,12 +3438,12 @@ class Set extends AlmaObject {
 			$xpath = new DomXpath($xml);
 			foreach ($xpath->query("//member") as $member) {
 				$id = $member->childNodes[0]->nodeValue;
-				if (!isset($filter) or ($filter($id,$filter_args))) { 
+				if (!isset($filter) or ($filter($id,$filter_args))) {
 					$function($id, $args);
 				}
 			}
 		}
-		
+
 	}
 // }}}
 
@@ -3293,6 +3569,130 @@ class Library extends AlmaObject {
 	}
 // }}}
 
+// {{{ Library -> getAllLibraries
+/**
+ * @brief get all libraries configured for the institution
+ *
+ * @return array of Library objects
+ */
+	public static function getAllLibraries() {
+		global $grima;
+		$xml = $grima->getAllLibraries();
+		$xpath = new DomXpath($xml);
+		$codes = $xpath->query('//library/code');
+		$libarray = array();
+		foreach ($codes as $code) {
+			$lib = new Library();
+			$lib->loadFromAlma($code->nodeValue);
+			$libarray[] = $lib;
+		}
+		return $libarray;
+	}
+// }}}
+
+// {{{ Library -> getOneLibrary
+/**
+ * @brief get one library configured by the institution
+ *
+ * @param Array $otherthan - a list of codes for libraries not wanted
+ * @return one library object
+ */
+	public static function getOneLibrary($otherthan = array()) {
+		global $grima;
+		$xml = $grima->getAllLibraries();
+		$xpath = new DomXpath($xml);
+		$codes = $xpath->query('//library/code');
+
+		foreach ($codes as $code) {
+			if (! in_array($code,$otherthan)) {
+				$lib = new Library();
+				$lib->loadFromAlma($code);
+				return $lib;
+			}
+		}
+		throw new Exception("No libraries found.");
+	}
+// }}}
+
+// {{{ Library -> getAllLocations
+/**
+ * @brief get all locations configured for the library
+ *
+ * @return array of Location objects
+ */
+	public function getAllLocations() {
+		global $grima;
+		$xml = $grima->getAllLocations($this['code']);
+		$xpath = new DomXpath($xml);
+		$codes = $xpath->query('//location/code');
+		$locarray = array();
+		foreach ($codes as $code) {
+			$loc = new Location();
+			$loc->loadFromAlma($this['code'], $code->nodeValue);
+			$locarray[] = $loc;
+		}
+		return $locarray;
+	}
+// }}}
+
+// {{{ Library -> getOneLocation
+/**
+ * @brief get one location configured for the library
+ *
+ * @param Array $otherthan - a list of codes for locations not wanted
+ * @return Location object
+ */
+	public function getOneLocation($otherthan = array()) {
+		global $grima;
+		$xml = $grima->getAllLocations($this['code']);
+		$xpath = new DomXpath($xml);
+		$codes = $xpath->query('//location/code');
+		foreach ($codes as $code) {
+			if (! in_array($code->nodeValue,$otherthan)) {
+				$loc = new Location();
+				$loc->loadFromAlma($this['code'],$code->nodeValue);
+				return $loc;
+			}
+		}
+		throw new Exception("No locations found.");
+	}
+// }}}
+
+// {{{ Library -> getOneLibraryLocation
+/**
+ * @brief get one library configured by the institution
+ *
+ * @param Array $otherthan - a list of pairs of codes for 
+ *    libraries/locations not wanted
+ * @return one library object
+ */
+	public static function getOneLibraryLocation($otherthan = array()) {
+		global $grima;
+
+		$xml = $grima->getAllLibraries();
+		$xpath = new DomXpath($xml);
+		$library_codes = $xpath->query('//library/code');
+
+		foreach ($library_codes as $library_code) {
+			$lib = new Library();
+			$lib->loadFromAlma($library_code->nodeValue);
+			$arr = array();
+			foreach ($otherthan as $other) {
+				if ($other[0] == $library_code->nodeValue) {
+					$arr[] = $other[1];
+				}
+			}
+			try {
+				$loc = $lib->getOneLocation($arr);
+				return $loc;
+			} catch (Exception $e) {
+				continue;
+			}
+		}
+		throw new Exception("No suitable library/location found.");
+	}
+// }}}
+
 }
 
 // }}}
@@ -3300,10 +3700,36 @@ class Library extends AlmaObject {
 // {{{ class Location
 /** class Location */
 class Location extends AlmaObject {
+
+	public $el_override_fields = array('library_code','flag');
+
 	public $el_address = array(
 		'code' => '//code',
 		'name' => '//name',
+		'external_name' => '//external_name',
+		'type' => '//type',
+		'remote_storage' => '//remote_storage',
+		'map' => '//map',
+		'suppress_from_publishing' => '//suppress_from_publishing',
+		'fulfillment_unit' => '//fulfillment_unit',
+		'accession_placement' => '//accession_placement',
+		'call_number_type' => '//call_number_type',
 	);
+
+	function offsetSet($offset,$value) {
+		if (in_array($offset,$this->el_override_fields)) {
+			$this->el_override[$offset] = $value;
+		} else {
+			parent::offsetSet($offset,$value);
+		}
+		/*
+		if ($offset == "library_code") {
+			$this->el_override['library_code'] = $value;
+		} else {
+			parent::offsetSet($offset,$value);
+		}
+		*/
+	}
 
 // {{{ Location -> loadFromAlma
 /**
@@ -3314,6 +3740,7 @@ class Location extends AlmaObject {
 	function loadFromAlma($libraryCode,$locationCode) {
 		global $grima;
 		$this->xml = $grima->getLocation($libraryCode, $locationCode);
+		$this['library_code'] = $libraryCode;
 	}
 // }}}
 
@@ -3358,7 +3785,7 @@ class Job extends AlmaObject {
 
 // {{{ Job -> runInAlma
 /**
- * @brief run a job in Alma XXX
+ * @brief run a job in Alma
  *
  * @param DomDocument job
  */
@@ -3397,7 +3824,7 @@ public $rows = array();
 		} else {
 			$passfilter = null;
 		}
- 
+
 		if ($limit == -1) { $limit = 1000; } # no limit
 		if ($limit < 25) { $limit = 25; } # must be in chunks of 25
 		$this->reportXml = $grima->getAnalytics($this->path, $passfilter, $limit, $token);
@@ -3447,23 +3874,15 @@ function tableExists($pdo, $table) {
  *
  */
 class GrimaDB implements ArrayAccess, IteratorAggregate {
+
+	private static $db = FALSE;
+	private $info;		// array
+
 	static function init() {
-		try {
-			$db = self::getDb();
-			if (!tableExists($db,"institutions")) {
-				$db->exec("CREATE TABLE institutions ( institution VARCHAR(100) PRIMARY KEY, apikey VARCHAR(100), server VARCHAR(100) )");
-			}
-			if (!tableExists($db,"users")) {
-				$db->exec("CREATE TABLE users ( institution VARCHAR(100), username VARCHAR(100), password VARCHAR(255), isAdmin INTEGER )");
-			}
-			return true;
-		} catch(Exception $x) {
-			# create the database
-			return false;
-		}
+		return self::getDb();
 	}
+
 	static function isEmpty() {
-		self::init();
 		$db = self::getDb();
 		$result = $db->query( 'SELECT COUNT(*) as c FROM institutions' );
 		foreach( $result as $row ) {
@@ -3472,14 +3891,28 @@ class GrimaDB implements ArrayAccess, IteratorAggregate {
 		return true;
 	}
 
+	static function isStateless() {
+		$db = self::getDb();
+		return $db === 'stateless';
+	}
+
 	protected static function getDb() {
 		if (!self::$db) {
-			$db_url = getenv('DATABASE_URL');
-			if (!$db_url) $db_url = "sqlite:" . join_paths( sys_get_temp_dir(), "grima/grima.sql");
-			if (getenv('DATABASE_USER')&&getenv('DATABASE_PASS')) {
-				self::$db = new PDO($db_url, getenv('DATABASE_USER'), getenv('DATABASE_PASS'));
-			} else {
-				self::$db = new PDO($db_url);
+			try {
+				$db_url = getenv('DATABASE_URL');
+				if (getenv('DATABASE_USER')&&getenv('DATABASE_PASS')) {
+					self::$db = new PDO($db_url, getenv('DATABASE_USER'), getenv('DATABASE_PASS'));
+				} else {
+					self::$db = new PDO($db_url);
+				}
+				if (!tableExists(self::$db,"institutions")) {
+					self::$db->exec("CREATE TABLE institutions ( institution VARCHAR(100) PRIMARY KEY, apikey VARCHAR(100), server VARCHAR(100) )");
+				}
+				if (!tableExists(self::$db,"users")) {
+					self::$db->exec("CREATE TABLE users ( institution VARCHAR(100), username VARCHAR(100), password VARCHAR(255), isAdmin INTEGER )");
+				}
+			} catch (Exception $e) {
+				self::$db = 'stateless';
 			}
 		}
 		return self::$db;
@@ -3490,18 +3923,17 @@ class GrimaDB implements ArrayAccess, IteratorAggregate {
 	}
 
 	static function getInstitutions() {
-		self::init();
-		$db = self::getDb();
-		$result = $db->query( 'SELECT institution FROM institutions' );
 		$ret = array();
-		foreach( $result as $row ) {
-			$ret[] = $row['institution'];
+		try {
+			$db = self::getDb();
+			$result = $db->query( 'SELECT institution FROM institutions' );
+			foreach( $result as $row ) {
+				$ret[] = $row['institution'];
+			}
+		} catch (Exception $e) {
 		}
 		return $ret;
 	}
-
-	private static $db = FALSE;
-	private $info;		// array
 
 	function offsetExists($offset) {
 		return isset($this->info[$offset]);
@@ -3656,9 +4088,6 @@ class GrimaUser extends GrimaDB {
 	}
 
 	public static function GetCurrentUser() {
-		global $grima;
-		$grima->session_init();
-		session_write_close();
 		if (!isset($_SESSION)) return false;
 		return GrimaUser::FromArray( $_SESSION );
 	}
@@ -3667,14 +4096,15 @@ class GrimaUser extends GrimaDB {
 		global $grima;
 		$user = GrimaUser::LookupUser( $username, $institution, $password );
 		if ( $user !== false ) {
-			if (isset($_SESSION)) {
-				session_write_close();
-				session_start();
-			}
 			$grima->session_save($user);
 		} else {
 			return false;
 		}
+	}
+
+	public static function LogoutCurrentUser() {
+		global $grima;
+		$grima->session_destroy();
 	}
 
 	function addToDB() {
@@ -3754,5 +4184,90 @@ class GrimaUser extends GrimaDB {
 // }}}
 
 // }}}
+
+// {{{ class EncryptedCookieSession
+
+class EncryptedCookieSession
+implements SessionHandlerInterface {
+
+	private $save_path;
+	private $session_name;
+	private $session_key;
+	private $last_read;
+
+	public function __construct( $key ) {
+		$this->session_key = $key;
+		$this->last_read = "Not This";
+	}
+
+	public function open ( $save_path, $session_name ) {
+		$this->save_path = $save_path;
+		$this->session_name = $session_name;
+		#error_log("session_open($save_path,$session_name)");
+		return true;
+	}
+
+	public function close () {
+		#error_log("session_close()");
+		return true;
+	}
+
+	public function destroy ($session_id) {
+		#error_log("session_destroy($session_id)");
+		$params = session_get_cookie_params();
+		$params['expires'] = time() - 42000;
+		unset($params['lifetime']);
+		setcookie( $this->session_name, '', $params );
+		return true;
+	}
+
+	public function gc ($maxlifetime) {
+		#error_log("session_gc($maxlifetime)");
+		return true;
+	}
+
+	public function read ($session_id) {
+		#error_log("session_read($session_id)");
+		$nonce_ciphertext_b64 = isset( $_COOKIE[$this->session_name] ) ? $_COOKIE[$this->session_name] : "";
+		if ($nonce_ciphertext_b64) {
+			$nonce_ciphertext = base64_decode( $nonce_ciphertext_b64 );
+			if (strlen($nonce_ciphertext)>24+16) {
+				$nonce = substr( $nonce_ciphertext, 0, 24 );
+				$ciphertext = substr( $nonce_ciphertext, 24 );
+				$plaintext = sodium_crypto_secretbox_open( $ciphertext, $nonce, $this->session_key );
+				#error_log("session_read -> $plaintext");
+				$this->last_read = $plaintext;
+				return $plaintext ?: "";
+			} else {
+				error_log("cookie too short: $nonce_ciphertext_b64");
+			}
+		} else {
+			#error_log("cookie not set or empty");
+		}
+		return "";
+	}
+
+	public function write ($session_id, $session_data) {
+		#error_log("session_write($session_id,$session_data)");
+		if (!$session_data) return true;
+		if ($this->last_read == $session_data) return true;
+		$nonce = random_bytes(24);
+		$ciphertext = sodium_crypto_secretbox( $session_data, $nonce, $this->session_key );
+		$nonce_ciphertext = $nonce.$ciphertext;
+		$nonce_ciphertext_b64 = base64_encode( $nonce_ciphertext );
+		$options = session_get_cookie_params();
+		if (isset($options['expires']) && $options['expires']) {
+			$options['expires'] += time();
+		}
+		unset($options['lifetime']);
+		setcookie( $this->session_name, $nonce_ciphertext_b64, $options );
+		return true;
+	}
+
+}
+
+// }}}
+
+$grima = new Grima();
 
 /* vim: set foldmethod=marker noexpandtab shiftwidth=4 tabstop=4: */

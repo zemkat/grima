@@ -1,0 +1,79 @@
+.jumbotron{
+	min-height: 100vh;
+}
+img.fullwidth {
+	max-width: 100%;
+}
+.dl-horizontal dt {
+		float: left;
+		width: 60px;
+		overflow: hidden;
+		clear: left;
+		text-align: right;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+}
+.marc .tag, .marc .delimiter, .marc .indicators {
+		font-family: monospace;
+		font-size: 125%;
+		font-weight: bolder;
+}
+
+.dl-horizontal dd {
+		margin-left: 80px;
+}
+
+.dl-horizontal > * {
+		margin-top: 0;
+		margin-bottom: 0;
+}
+
+@media print {
+	/*
+	.container {
+		font-size: 50%;
+		width: auto;
+	}
+	* {
+		float: none !important;
+	}
+	body {
+		overflow: visible !important;
+	}
+	*/
+	div {
+		display: block !important;
+	}
+	.jumbotron {
+		padding: 0 !important;
+		margin: 0 !important;
+	}
+	div.container {
+		max-width: 7.1in !important;
+		width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		display: inline;
+	}
+	.card, .card-body {
+		display: inline !important;
+	}
+	.card-title {
+		display: inline;
+		word-wrap: wrap;
+	}
+	.card, .card-body, .card-header {
+		border-width: 0 !important;
+		max-width: 7.1in !important;
+	}
+	table.marc {
+		max-width:7in !important;
+	}
+	div.help-button {
+		display: none !important;
+	}
+	div {
+		border-width: 0 !important;
+		max-width: 7.1in !important;
+	}
+}

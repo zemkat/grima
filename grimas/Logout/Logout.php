@@ -5,8 +5,7 @@ require_once("../grima-lib.php");
 class Logout extends GrimaTask {
 
 	function do_task() {
-		global $grima;
-		$grima->session_destroy();
+		GrimaUser::LogoutCurrentUser();
 		$this->addMessage('success',"You have been logged out.");
 	}
 

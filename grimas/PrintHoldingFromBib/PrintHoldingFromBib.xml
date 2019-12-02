@@ -1,0 +1,19 @@
+<GrimaForm>
+    <Title>Grima: Print Holding Record (using Bib)</Title>
+    <Field
+        name="holding_id"
+        label="Holding ID"
+        shortname="h"
+        autocomplete="off"
+        required="yes"
+        placeholder="Holding ID of bib to print..."
+    />
+    <Field
+        name="mms_id"
+        label="MMS ID"
+        shortname="m"
+        autocomplete="off"
+        required="yes"
+        placeholder="MMS ID of associated bib..."
+    />
+</GrimaForm>

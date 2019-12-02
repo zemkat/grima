@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grima
+spec:
+  selector:
+    app: grima
+  ports:
+  - name: grima
+    port: 19290
+    targetPort: 19290
+    # for minikube, probably use a load balancer for cloud hosting
+    nodePort: 32290
+  type: "NodePort"

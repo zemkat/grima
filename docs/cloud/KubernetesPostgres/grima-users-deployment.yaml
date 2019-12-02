@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grima-users
+spec:
+  selector:
+    matchLabels:
+      app: grima-users
+      role: master
+      tier: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: grima-users
+        role: master
+        tier: backend
+    spec:
+      containers:
+        - name: grima-users
+          image: postgres:12
+          resources:
+            requests:
+              memory: 256Mi
+          imagePullPolicy: Always
+          env:
+          - name:     "POSTGRES_DB"
+            value:    "grima"
+          - name:     "POSTGRES_USER"
+            value:    "grima"
+          - name:     "POSTGRES_PASSWORD"
+            value:    "wd0wcWoSQaxKr6gB"
+      restartPolicy: Always

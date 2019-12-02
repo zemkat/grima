@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grima
+spec:
+  selector:
+    matchLabels:
+      app: grima
+      role: independent
+      tier: backend
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: grima
+        role: independent
+        tier: backend
+    spec:
+      containers:
+        - name: grima
+          image: zemkat/grima-cloud
+          ports:
+          - containerPort: 19290
+          resources:
+            requests:
+              cpu: 60m
+              memory: 256Mi
+          imagePullPolicy: Always
+          env:
+          # default apikey (none, require login)
+          - name: apikey
+            value: ""
+          - name: server
+            value: ""
+          # user database (postgres)
+          - name:     "DATABASE_URL"
+            value:    "pgsql:host=grima-users;dbname=grima;user=grima;password=wd0wcWoSQaxKr6gB"
+          # session handling (encrypted cookie, stateless server)
+          - name:     "SESSION_MODULE"
+            value:    "encrypted_cookie"
+          - name:     "SESSION_NAME"
+            value:    "grima"
+          - name:     "SESSION_PATH"
+            value:    "/tmp"
+          - name:     "SESSION_KEY"
+            value:    "8pyqFOOCtcmZqiTPvWd7x12NWtUKPrpj5o1oyAI0vr4="
+          # force docker image pull
+          - name:     "cachebust"
+            value:    "please3"
+      restartPolicy: Always

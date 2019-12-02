@@ -1,0 +1,11 @@
+<GrimaForm>
+	<Title>Grima: Get Mms From Holding ID</Title>
+	<Field
+		name="holding_id"
+		label="Holding ID"
+		shortname="h"
+		autocomplete="off"
+		required="yes"
+		placeholder="Holding ID..."
+	/>
+</GrimaForm>

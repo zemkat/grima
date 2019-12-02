@@ -46,6 +46,10 @@ The elements are:
         * autocomplete - should this autocomplete? (yes or no)
         * required - is this field required? (yes or no)
         * placeholder - will appear in gray in the textbox
+        * persistent - XXX
+		* dataset - XXX
+		* rows - XXX
+		* select - XXX
 
 ### Specifying Behavior (PHP)
 
@@ -94,8 +98,9 @@ with any messages. If you want to call another grima, you can do this
 by overriding the `print_success` method of the GrimaTask, as is done
 in [InsertOclcNo](../grimas/InsertOclcNo/InsertOclcNo.md):
 
+
     function print_success() {
-        do_redirect('../PrintBib/PrintBib.php?mms_id=' . $this['mms_id']);
+        GrimaTask::call('PrintBib', array('mms_id' => $this['mms_id']));
     }
 
 After the OCLC number has been successfully inserted into the specified

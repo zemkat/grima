@@ -1,5 +1,33 @@
 # Installation guide for Grima
 
+Grima is meant to be a time-saving addition to your workflow. Since everyone's
+workflow is a bit different, the installation instructions have a lot to do
+with what is easy for you.
+
+We measure cost in terms of time. All software recommendations are free.
+Hardware requirements are minimal and should likely run on your existing
+computers.
+
+Low cost ways to get started:
+
+* Ask Kathryn to add you to [the public grima
+install](https://pub.grima.zemkat.org/) (you'll need to get an APIKEY and be
+comfortable giving it to Kathryn)
+
+Medium cost (requires installing software):
+
+* If you can install software on a personal computer (Windows, MacOS, Linux),
+then install docker and run [grima.bat](docker/grima.bat) or
+[grima.sh](docker/grima.sh). Those files download and auto-update grima. You'll
+need to add your APIKEY.
+* If you can install webapps on a unix based web-server, then unpack [a
+release](releases/grima.tgz) in a web-accessible directory (if apache based,
+you are probably done, check the system adminstrator otherwise).
+* If you can deploy containerized cloud apps to kubernetes, docker swarm,
+etc. then adjust one of the [example configurations](docker/examples)
+to match your setup
+
+
 ## Requirements
 
 Grima is a collection of php scripts with minimal dependencies. A reasonably

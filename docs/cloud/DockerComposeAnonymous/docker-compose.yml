@@ -1,0 +1,24 @@
+version: '2.1'
+
+services:
+
+  # apache+php+grima
+  grima:
+    image:            "${GRIMA_IMAGE:-zemkat/grima-cloud}"
+    ports:
+      -               "${GRIMA_PORT:-19290}:${APACHE_PORT:-19290}"
+    environment:
+      # default APIKEY (none, require login)
+      apikey:         ""
+      server:         ""
+      # session storage (per browser APIKEY)
+      SESSION_MODULE: "${SESSION_MODULE:-encrypted_cookie}"
+      SESSION_NAME:   "${SESSION_NAME:-grima}"
+      SESSION_PATH:   "${SESSION_PATH:-/tmp}"
+      SESSION_KEY:    "${SESSION_KEY:-8pyqFOOCtcmZqiTPvWd7x12NWtUKPrpj5o1oyAI0vr4=}"
+      # user database (force anonymous login via apikey)
+      DATABASE_URL:   "${DATABASE_URL:-anonymous}"
+      DATABASE_USER:  ""
+      DATABASE_PASS:  ""
+      # apache config
+      APACHE_PORT:    "${APACHE_PORT:-19290}"

@@ -5,7 +5,6 @@ require_once("../grima-lib.php");
 class Login extends GrimaTask {
 
 	function do_task() {
-		global $grima;
 		$user = GrimaUser::SetCurrentUser( 
 			isset($this['username']) ? $this['username'] : '',
 			isset($this['password']) ? $this['password'] : '',
@@ -31,8 +30,10 @@ class Login extends GrimaTask {
 	}
 }
 
-if (GrimaDb::isEmpty()) {
-	require_once "../AdminAddInstitution/AdminAddInstitution.php";
+if (GrimaDb::isStateless()) {
+	require_once("../PublicLogin/PublicLogin.php");
+} else if (GrimaDb::isEmpty()) {
+	require_once("../AdminAddInstitution/AdminAddInstitution.php");
 } else {
 	Login::RunIt();
 }

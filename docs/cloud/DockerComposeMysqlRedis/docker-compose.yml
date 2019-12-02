@@ -1,0 +1,55 @@
+version: '2.1'
+
+networks:
+  grima-net:
+
+volumes:
+  grima-users:
+  grima-sessions:
+
+services:
+
+  # apache+php+grima
+  grima:
+    image:            "${GRIMA_IMAGE:-zemkat/grima-cloud}"
+    ports:
+      -               "${GRIMA_PORT:-19290}:${APACHE_PORT:-19290}"
+    environment:
+      # default APIKEY (empty, require login)
+      apikey:         ""
+      server:         ""
+      # session storage (per browser APIKEY storage)
+      SESSION_MODULE: "redis"
+      SESSION_NAME:   "${SESSION_NAME:-grima}"
+      SESSION_PATH:   "tcp://grima-sessions"
+      # user database (login to get a stored APIKEY)
+      DATABASE_URL:   "mysql:host=grima-users;dbname=${GRIMA_DBNAME:-grima}"
+      DATABASE_USER:  "${GRIMA_DBUSER:-grima}"
+      DATABASE_PASS:  "${GRIMA_DBPASS:-wd0wcWoSQaxKr6gB}"
+      # apache config
+      APACHE_PORT:    "${APACHE_PORT:-19290}"
+    networks:
+      - grima-net
+
+  # session storage
+  grima-sessions:
+    image:            "redis:5.0"
+    hostname:         "grima-sessions"
+    networks:
+      - grima-net
+    volumes:
+      -               "grima-sessions:/data"
+
+  # user database
+  grima-users:
+    image:            "mysql:5.7"
+    hostname:         "grima-users"
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+      MYSQL_DATABASE:             "${GRIMA_DBNAME:-grima}"
+      MYSQL_USER:                 "${GRIMA_DBUSER:-grima}"
+      MYSQL_PASSWORD:             "${GRIMA_DBPASS:-wd0wcWoSQaxKr6gB}"
+    networks:
+      -                           grima-net
+    volumes:
+      -                           "grima-users:/var/lib/mysql"

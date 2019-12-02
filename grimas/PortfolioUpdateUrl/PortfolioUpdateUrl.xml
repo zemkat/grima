@@ -1,0 +1,19 @@
+<GrimaForm>
+	<Title>Grima: Update Portfolio URL</Title>
+	<Field
+		name="portfolio_id"
+		label="Portfolio ID"
+		shortname="p"
+		autocomplete="off"
+		required="yes"
+		placeholder="Portfolio to update..."
+	/>
+	<Field
+		name="url"
+		label="New URL"
+		shortname="u"
+		autocomplete="off"
+		required="yes"
+		placeholder="New URL for portfolio..."
+	/>
+</GrimaForm>
