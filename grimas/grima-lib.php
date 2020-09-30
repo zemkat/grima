@@ -3354,12 +3354,15 @@ class GrimaUser extends GrimaDB {
 				"Could not even prepare to insert into user database: [$errorCode] {$errorInfo[0]} {$errorInfo[2]}"
 			);
 		}
-		$success = $query->execute( array(
-			'username' => $this['username'],
-			'password' => password_hash( $this['password'], $this->getPasswordAlgorithm() ),
-			'institution' => $this['institution'],
-			'isAdmin' => $this['isAdmin'],
-		) );
+
+		// Bindindg individually instead as ::execute() param to use specific type.
+		$query->bindValue('username', $this['username']);
+		$query->bindValue('password', password_hash( $this['password'], $this->getPasswordAlgorithm() ));
+		$query->bindValue('institution', $this['institution']);
+		$query->bindValue('isAdmin', $this['isAdmin'], \PDO::PARAM_BOOL);
+
+		$success = $query->execute();
+
 		if (!$success) {
 			$errorCode = $query->errorCode();
 			$errorInfo = $query->errorInfo();
