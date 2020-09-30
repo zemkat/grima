@@ -3234,6 +3234,9 @@ class GrimaUser extends GrimaDB {
 	public static function FromArray( $data ) {
 		$user = new GrimaUser();
 		foreach ( $data as $key => $val ) {
+			if ($key == "isadmin") {
+				$key = "isAdmin";
+			}
 			$user[$key] = $val;
 		}
 		return $user;
